@@ -205,7 +205,7 @@ class Trainer():
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             outputs = self.model(image)
-            loss = self.criterion(*outputs, target)
+            loss = self.criterion(outputs, target)
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
