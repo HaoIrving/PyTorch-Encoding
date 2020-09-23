@@ -9,6 +9,7 @@ from .pcontext import ContextSegmentation
 from .cityscapes import CitySegmentation
 from .imagenet import ImageNetDataset
 from .minc import MINCDataset
+from .sar_voc import VOCSegmentation_sar
 
 from ..utils import EncodingDeprecationWarning
 
@@ -22,6 +23,7 @@ datasets = {
     'imagenet': ImageNetDataset,
     'minc': MINCDataset,
     'cifar10': CIFAR10,
+    'sar_voc': VOCSegmentation_sar,
 }
 
 acronyms = {
@@ -33,6 +35,7 @@ acronyms = {
     'citys': 'citys',
     'minc': 'minc',
     'cifar10': 'cifar10',
+    'sar_voc': 'sar',
 }
 
 def get_dataset(name, **kwargs):

@@ -128,7 +128,7 @@ def batch_intersection_union(output, target, nclass):
     area_union = area_pred + area_lab - area_inter
     assert (area_inter <= area_union).all(), \
         "Intersection area should be smaller than Union area"
-    return area_inter, area_union
+    return area_inter, area_union, area_pred
 
 
 # ref https://github.com/CSAILVision/sceneparsing/blob/master/evaluationCode/utils_eval.py

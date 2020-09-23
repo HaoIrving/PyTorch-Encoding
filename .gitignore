@@ -11,3 +11,7 @@ encoding.egg-info/
 *.o
 *.so
 *.ninja*
+build
+dist
+torch_*
+.vscode
