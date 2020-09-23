@@ -32,7 +32,7 @@ class VOCSegmentation_sar(BaseDataset):
             _split_f = os.path.join(_splits_dir, 'train.txt')
         elif self.mode == 'val':  
             _split_f = os.path.join(_splits_dir, 'val.txt')
-        elif self.mode == 'testval':
+        elif self.mode == 'test':
             _split_f = os.path.join(_splits_dir, 'val.txt')
         else:
             raise RuntimeError('Unknown dataset split.')

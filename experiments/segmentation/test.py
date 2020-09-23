@@ -99,7 +99,7 @@ def test(args):
         ])
     # dataset
     if args.eval:
-        testset = get_dataset(args.dataset, split='val', mode='testval',
+        testset = get_dataset(args.dataset, split='val', mode='test', # testval
                               transform=input_transform)
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',
