@@ -211,9 +211,6 @@ class Trainer():
             train_loss += loss.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
 
-            self.validation(epoch)
-
-
         if self.args.no_val:
             # save checkpoint every epoch
             is_best = False
