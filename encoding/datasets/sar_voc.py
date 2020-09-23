@@ -32,7 +32,7 @@ class VOCSegmentation_sar(BaseDataset):
             _split_f = os.path.join(_splits_dir, 'train.txt')
         elif self.mode == 'val':  
             _split_f = os.path.join(_splits_dir, 'val.txt')
-        elif self.mode == 'test':
+        elif self.mode == 'testval':
             _split_f = os.path.join(_splits_dir, 'val.txt')
         else:
             raise RuntimeError('Unknown dataset split.')
@@ -71,7 +71,7 @@ class VOCSegmentation_sar(BaseDataset):
             img, target = self._val_sync_transform_sar(img, target)
         else:
             assert self.mode == 'testval'
-            mask = self._mask_transform(mask)
+            target = self._mask_transform(target)
         # general resize, normalize and toTensor
         if self.transform is not None:
             img = self.transform(img)
