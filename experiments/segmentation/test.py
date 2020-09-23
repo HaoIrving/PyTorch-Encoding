@@ -33,7 +33,7 @@ class Options():
                             help='dataset name (default: pascal12)')
         parser.add_argument('--workers', type=int, default=16,
                             metavar='N', help='dataloader threads')
-        parser.add_argument('--base-size', type=int, default=520,
+        parser.add_argument('--base-size', type=int, default=5,
                             help='base image size')
         parser.add_argument('--crop-size', type=int, default=480,
                             help='crop image size')
