@@ -256,6 +256,7 @@ class Trainer():
             tbar.set_description(
                 'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
 
+        # TODO save best model according to fwIOU
         new_pred = (pixAcc + mIoU)/2
         if new_pred > self.best_pred:
             is_best = True

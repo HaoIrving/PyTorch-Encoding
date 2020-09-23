@@ -95,7 +95,8 @@ def test(args):
     # data transforms
     input_transform = transform.Compose([
         transform.ToTensor(),
-        transform.Normalize([.485, .456, .406], [.229, .224, .225])])
+        # transform.Normalize([.485, .456, .406], [.229, .224, .225])
+        ])
     # dataset
     if args.eval:
         testset = get_dataset(args.dataset, split='val', mode='testval',
@@ -166,8 +167,8 @@ def test(args):
             with torch.no_grad():
                 predicts = evaluator.parallel_forward(image)
                 metric.update(dst, predicts)
-                pixAcc, mIoU = metric.get()
-                tbar.set_description( 'pixAcc: %.4f, mIoU: %.4f' % (pixAcc, mIoU))
+                pixAcc, mIoU, fwIoU = metric.get()
+                tbar.set_description( 'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
         else:
             with torch.no_grad():
                 outputs = evaluator.parallel_forward(image)
@@ -179,7 +180,7 @@ def test(args):
                 mask.save(os.path.join(outdir, outname))
 
     if args.eval:
-        print( 'pixAcc: %.4f, mIoU: %.4f' % (pixAcc, mIoU))
+        print( 'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
 
 class ReturnFirstClosure(object):
     def __init__(self, data):

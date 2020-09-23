@@ -30,7 +30,7 @@ class VOCSegmentation_sar(BaseDataset):
         _splits_dir = os.path.join(_voc_root, 'ImageSets/Segmentation')
         if self.mode == 'train':
             _split_f = os.path.join(_splits_dir, 'train.txt')
-        elif self.mode == 'val':  # deprecated
+        elif self.mode == 'val':  
             _split_f = os.path.join(_splits_dir, 'val.txt')
         elif self.mode == 'test':
             _split_f = os.path.join(_splits_dir, 'val.txt')
