@@ -137,7 +137,7 @@ def test(args):
     elif not pretrained:
         raise RuntimeError ("=> no checkpoint found")
 
-    print(model)
+    # print(model)
     if args.acc_bn:
         from encoding.utils.precise_bn import update_bn_stats
         data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
