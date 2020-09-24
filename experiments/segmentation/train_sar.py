@@ -199,7 +199,7 @@ class Trainer():
             args.start_epoch = 0
         # lr scheduler
         self.scheduler = utils.LR_Scheduler_Head(args.lr_scheduler, args.lr,
-                                                 args.epochs, len(self.trainloader))
+                                                 args.epochs, len(self.trainloader), warmup_epochs=1)
         self.best_pred = 0.0
 
     def training(self, epoch):
