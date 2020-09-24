@@ -273,7 +273,7 @@ class Trainer():
             'best_pred': self.best_pred,
         }, self.args, is_best)
         if is_best:
-            print('best epoch: {}'.format(epoch))
+            print('best epoch: {}'.format(epoch+1))
 
 
 if __name__ == "__main__":
