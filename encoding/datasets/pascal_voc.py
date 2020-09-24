@@ -29,6 +29,8 @@ class VOCSegmentation(BaseDataset):
             _split_f = os.path.join(_splits_dir, 'trainval.txt')
         elif self.mode == 'val':
             _split_f = os.path.join(_splits_dir, 'val.txt')
+        elif self.mode == 'testval':
+            _split_f = os.path.join(_splits_dir, 'val.txt')
         elif self.mode == 'test':
             _split_f = os.path.join(_splits_dir, 'test.txt')
         else:
@@ -62,7 +64,7 @@ class VOCSegmentation(BaseDataset):
             img, target = self._val_sync_transform( img, target)
         else:
             assert self.mode == 'testval'
-            mask = self._mask_transform(mask)
+            target = self._mask_transform(target)
         # general resize, normalize and toTensor
         if self.transform is not None:
             img = self.transform(img)
