@@ -126,7 +126,7 @@ class ASPP_Module(nn.Module):
         y = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
         return self.project(y)
 
-def get_deeplab(dataset='pascal_voc', backbone='resnet50s', pretrained=False, pretrained_dataset='ade20k'
+def get_deeplab(dataset='pascal_voc', backbone='resnet50s', pretrained=False, pretrained_dataset='ade20k',
             root='~/.encoding/models', **kwargs): # pcontext
     # infer number of classes
     from ...datasets import datasets, acronyms
