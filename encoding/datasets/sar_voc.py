@@ -80,10 +80,10 @@ class VOCSegmentation_sar(BaseDataset):
         return img, target
 
     def _mask_transform(self, mask):
-        return torch.from_numpy(np.array(mask)).long()
-        # target = np.array(mask).astype('int32')
-        # target[target == 255] = -1
-        # return torch.from_numpy(target).long()
+        # return torch.from_numpy(np.array(mask)).long()
+        target = np.array(mask).astype('int32')
+        target[target == 255] = -1
+        return torch.from_numpy(target).long()
 
     def __len__(self):
         return len(self.images)
