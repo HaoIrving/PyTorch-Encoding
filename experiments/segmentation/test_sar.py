@@ -166,6 +166,9 @@ def test(args):
         if args.eval:
             with torch.no_grad():
                 predicts = evaluator.parallel_forward(image)
+                # outputs = model(image)
+                # outputs = gather(outputs, 0, dim=0)
+                # pred = outputs[0]
                 metric.update(dst, predicts)
                 pixAcc, mIoU, fwIoU = metric.get()
                 tbar.set_description( 'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
