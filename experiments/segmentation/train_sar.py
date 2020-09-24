@@ -272,6 +272,8 @@ class Trainer():
             'optimizer': self.optimizer.state_dict(),
             'best_pred': self.best_pred,
         }, self.args, is_best)
+        if is_best:
+            print('best epoch: {}'.format(epoch))
 
 
 if __name__ == "__main__":
