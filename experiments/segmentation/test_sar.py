@@ -33,7 +33,7 @@ class Options():
                             help='dataset name (default: pascal12)')
         parser.add_argument('--workers', type=int, default=16,
                             metavar='N', help='dataloader threads')
-        parser.add_argument('--base-size', type=int, default=520,
+        parser.add_argument('--base-size', type=int, default=512,
                             help='base image size')
         parser.add_argument('--crop-size', type=int, default=480,
                             help='crop image size')
@@ -95,7 +95,8 @@ def test(args):
     # data transforms
     input_transform = transform.Compose([
         transform.ToTensor(),
-        transform.Normalize([.485, .456, .406], [.229, .224, .225])])
+        # transform.Normalize([.485, .456, .406], [.229, .224, .225])
+        ])
     # dataset
     if args.eval:
         testset = get_dataset(args.dataset, split='val', mode='testval',
@@ -137,7 +138,7 @@ def test(args):
     elif not pretrained:
         raise RuntimeError ("=> no checkpoint found")
 
-    print(model)
+    # print(model)
     if args.acc_bn:
         from encoding.utils.precise_bn import update_bn_stats
         data_kwargs = {'transform': input_transform, 'base_size': args.base_size,

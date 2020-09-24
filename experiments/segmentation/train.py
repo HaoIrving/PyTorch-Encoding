@@ -225,26 +225,31 @@ class Trainer():
             pred = outputs[0]
             target = target.cuda()
             correct, labeled = utils.batch_pix_accuracy(pred.data, target)
-            inter, union = utils.batch_intersection_union(pred.data, target, self.nclass)
-            return correct, labeled, inter, union
+            inter, union, area_pred = utils.batch_intersection_union(pred.data, target, self.nclass)
+            return correct, labeled, inter, union, area_pred
 
         is_best = False
         self.model.eval()
-        total_inter, total_union, total_correct, total_label = 0, 0, 0, 0
+        total_inter, total_union, total_correct, total_label, total_pred = 0, 0, 0, 0, 0
         tbar = tqdm(self.valloader, desc='\r')
         for i, (image, target) in enumerate(tbar):
             with torch.no_grad():
-                correct, labeled, inter, union = eval_batch(self.model, image, target)
+                correct, labeled, inter, union, area_pred = eval_batch(self.model, image, target)
 
             total_correct += correct
             total_label += labeled
             total_inter += inter
             total_union += union
+            total_pred += area_pred
             pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
             IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
             mIoU = IoU.mean()
+
+            freq = 1.0 * total_pred / (np.spacing(1) + total_label)
+            fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
+
             tbar.set_description(
-                'pixAcc: %.3f, mIoU: %.3f' % (pixAcc, mIoU))
+                'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
 
         new_pred = (pixAcc + mIoU)/2
         if new_pred > self.best_pred:
