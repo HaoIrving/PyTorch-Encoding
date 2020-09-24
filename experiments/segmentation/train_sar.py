@@ -121,7 +121,7 @@ class Options():
                 'pcontext': 0.001,
                 'ade20k': 0.004,
                 'citys': 0.004,
-                'sar_voc': 0.0001,
+                'sar_voc': 0.0002,
             }
             args.lr = lrs[args.dataset.lower()] / 16 * args.batch_size
         print(args)
@@ -199,7 +199,7 @@ class Trainer():
             args.start_epoch = 0
         # lr scheduler
         self.scheduler = utils.LR_Scheduler_Head(args.lr_scheduler, args.lr,
-                                                 args.epochs, len(self.trainloader), warmup_epochs=1)
+                                                 args.epochs, len(self.trainloader), warmup_epochs=2)
         self.best_pred = 0.0
 
     def training(self, epoch):
@@ -262,7 +262,7 @@ class Trainer():
                 'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
 
         # TODO save best model according to fwIOU
-        new_pred = (pixAcc + mIoU)/2
+        new_pred = (pixAcc + mIoU + fwIoU)/3
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
