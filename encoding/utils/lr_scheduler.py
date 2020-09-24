@@ -60,7 +60,7 @@ class LR_Scheduler(object):
             raise NotImplemented
         if epoch > self.epoch and (epoch == 0 or best_pred > 0.0):
             if not self.quiet:
-                print('\n=>Epoch %i, learning rate = %f, \
+                print('\n=>Epoch %i, learning rate = %.10f, \
                     previous best = %.4f' % (epoch, lr, best_pred))
             self.epoch = epoch
         assert lr >= 0
