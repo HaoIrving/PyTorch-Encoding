@@ -150,9 +150,13 @@ class Trainer():
                                          drop_last=False, shuffle=False, **kwargs)
         self.nclass = trainset.num_class
         # model
+        # model = get_segmentation_model(args.model, dataset=args.dataset,
+        #                                backbone = args.backbone, pretrained=True, pretrained_dataset='ade20k', 
+        #                                aux = args.aux,
+        #                                se_loss = args.se_loss, norm_layer = SyncBatchNorm,
+        #                                base_size=args.base_size, crop_size=args.crop_size)
         model = get_segmentation_model(args.model, dataset=args.dataset,
-                                       backbone = args.backbone, pretrained=True, pretrained_dataset='ade20k', 
-                                       aux = args.aux,
+                                       backbone = args.backbone, aux = args.aux,
                                        se_loss = args.se_loss, norm_layer = SyncBatchNorm,
                                        base_size=args.base_size, crop_size=args.crop_size)
         print(model)

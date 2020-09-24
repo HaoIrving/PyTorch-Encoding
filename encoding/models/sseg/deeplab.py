@@ -135,6 +135,8 @@ def get_deeplab(dataset='pascal_voc', backbone='resnet50s', pretrained=False, pr
         from ..model_store import get_model_file
         model.load_state_dict(torch.load(
             get_model_file('deeplab_%s_%s'%(backbone, acronyms[pretrained_dataset]), root=root)), strict=False)
+        # path = get_model_file('deeplab_%s_%s'%(backbone, acronyms[pretrained_dataset]), root=root)
+
     return model
 
 def get_deeplab_resnet50_ade(pretrained=False, root='~/.encoding/models', **kwargs):
