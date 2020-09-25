@@ -170,14 +170,8 @@ def test(args):
                 # outputs = gather(outputs, 0, dim=0)
                 # pred = outputs[0]
                 metric.update(dst, predicts)
-                pixAcc, mIoU, fwIoU, freq = metric.get()
-            tbar.set_description(
-            tbar.set_description(
-                'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f \n\
-                 freq0: %.3f, freq1: %.3f, freq2: %.3f, freq3: %.3f, freq4: %.3f, freq5: %.3f, freq6: %.3f \n\
-                 IoU0: %.3f, IoU1: %.3f, IoU2: %.3f, IoU3: %.3f, IoU4: %.3f, IoU5: %.3f, IoU6: %.3f'\
-                     % (pixAcc, mIoU, fwIoU, freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6], \
-                        IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+                pixAcc, mIoU, fwIoU, freq, IoU = metric.get()
+                tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
         else:
             with torch.no_grad():
                 outputs = evaluator.parallel_forward(image)
@@ -189,7 +183,10 @@ def test(args):
                 mask.save(os.path.join(outdir, outname))
 
     if args.eval:
-        print( 'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
+        print('freq0: %.3f, freq1: %.3f, freq2: %.3f, freq3: %.3f, freq4: %.3f, freq5: %.3f, freq6: %.3f' % \
+            (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
+        print('IoU0: %.3f, IoU1: %.3f, IoU2: %.3f, IoU3: %.3f, IoU4: %.3f, IoU5: %.3f, IoU6: %.3f' % \
+            (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
 
 class ReturnFirstClosure(object):
     def __init__(self, data):

@@ -39,7 +39,7 @@ def get_pixacc_miou(total_correct, total_label, total_inter, total_union, total_
     freq = 1.0 * total_lab / (np.spacing(1) + total_label)
     fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
     
-    return pixAcc, mIoU, fwIoU, freq #, total_lab
+    return pixAcc, mIoU, fwIoU, freq, IoU #, total_lab
     
 
 class SegmentationMetric(object):
