@@ -95,8 +95,8 @@ class Options():
         # test option
         parser.add_argument('--test-folder', type=str, default=None,
                             help='path to test image folder')
-        parser.add_argument('--warmup-epochs', type=str, default=1,
-                            help='path to test image folder')
+        parser.add_argument('--warmup-epochs', type=int, default=1, metavar='N',
+                            help='number of epochs to train (default: auto)')
         # the parser
         self.parser = parser
 
