@@ -262,7 +262,8 @@ class Trainer():
                 'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
 
         # TODO save best model according to fwIOU
-        new_pred = (pixAcc + mIoU + fwIoU)/3
+        # new_pred = (pixAcc + mIoU + fwIoU)/3
+        new_pred = fwIoU
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred

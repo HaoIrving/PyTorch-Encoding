@@ -170,8 +170,7 @@ def test(args):
                 # outputs = gather(outputs, 0, dim=0)
                 # pred = outputs[0]
                 metric.update(dst, predicts)
-                pixAcc, mIoU, fwIoU, total_lab = metric.get()
-                print(total_lab)
+                pixAcc, mIoU, fwIoU = metric.get()
                 tbar.set_description( 'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
         else:
             with torch.no_grad():
