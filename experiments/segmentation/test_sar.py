@@ -155,6 +155,7 @@ def test(args):
         torch.save(model.state_dict(), args.export + '.pth')
         return
 
+    # TODO: using multi scale testing
     scales = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25] if args.dataset == 'citys' else \
             []# [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]#, 2.0
     evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
