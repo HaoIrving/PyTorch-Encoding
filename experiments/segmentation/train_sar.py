@@ -95,6 +95,8 @@ class Options():
         # test option
         parser.add_argument('--test-folder', type=str, default=None,
                             help='path to test image folder')
+        parser.add_argument('--warmup-epochs', type=str, default=1,
+                            help='path to test image folder')
         # the parser
         self.parser = parser
 
@@ -121,7 +123,7 @@ class Options():
                 'pcontext': 0.001,
                 'ade20k': 0.004,
                 'citys': 0.004,
-                'sar_voc': 0.0002,
+                'sar_voc': 0.0001,
             }
             args.lr = lrs[args.dataset.lower()] / 16 * args.batch_size
         print(args)
@@ -199,7 +201,7 @@ class Trainer():
             args.start_epoch = 0
         # lr scheduler
         self.scheduler = utils.LR_Scheduler_Head(args.lr_scheduler, args.lr,
-                                                 args.epochs, len(self.trainloader), warmup_epochs=2)
+                                                 args.epochs, len(self.trainloader), warmup_epochs=args.warmup_epochs)
         self.best_pred = 0.0
 
     def training(self, epoch):
