@@ -189,9 +189,8 @@ def test(args):
         #     (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
-        print('IoU0 : %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU5 : %f, IoU6 : %f' % \
+        print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
-
 
 class ReturnFirstClosure(object):
     def __init__(self, data):
