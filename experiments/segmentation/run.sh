@@ -3,16 +3,17 @@ python setup.py install
 
 cd experiments/segmentation
 
-python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 15 --warmup-epochs 0
+python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 15 --warmup-epochs 1
 
 python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 
 # lr 0.0001
+        # no warm       warm 
+# 10    0.3237 10   
+# 15    0.3430 15       1 
+# 20    
 
-# 10 no warm        0.3237 10   
-# 15 no warm           
 # 15 warm    
-# 20 no warm 
 # 20 warm       1      
 # 30 warm       1      
 # 40 warm       2   0.4546    

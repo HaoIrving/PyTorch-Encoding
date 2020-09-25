@@ -261,7 +261,9 @@ class Trainer():
             fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
 
             tbar.set_description(
-                'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
+                'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f, \
+                 freq0: %.3f, freq1: %.3f, freq2: %.3f, freq3: %.3f, freq4: %.3f, freq5: %.3f, freq6: %.3f' \
+                     % (pixAcc, mIoU, fwIoU, freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
 
         # TODO save best model according to fwIOU
         # new_pred = (pixAcc + mIoU + fwIoU)/3

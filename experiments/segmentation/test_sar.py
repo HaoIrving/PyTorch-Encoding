@@ -170,8 +170,11 @@ def test(args):
                 # outputs = gather(outputs, 0, dim=0)
                 # pred = outputs[0]
                 metric.update(dst, predicts)
-                pixAcc, mIoU, fwIoU = metric.get()
-                tbar.set_description( 'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
+                pixAcc, mIoU, fwIoU, freq = metric.get()
+            tbar.set_description(
+                'pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f, \
+                 freq0: %.3f, freq1: %.3f, freq2: %.3f, freq3: %.3f, freq4: %.3f, freq5: %.3f, freq6: %.3f' \
+                     % (pixAcc, mIoU, fwIoU, freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         else:
             with torch.no_grad():
                 outputs = evaluator.parallel_forward(image)
