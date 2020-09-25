@@ -7,14 +7,14 @@ cd experiments/segmentation
 # python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 # # lr 0.0001
 #         # no warm       warm 1      warm 2
-# # 30    0.3710
-# # 40    
-python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest50 --batch-size 30 --epochs 40 --warmup-epochs 2
-python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest50 --resume runs/sar_voc/deeplab/resnest50/default/model_best.pth.tar --eval
+# # 30    0.3710 21
+# # 40                                0.4546
+python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest101 --batch-size 30 --epochs 40 --warmup-epochs 2
+python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest101 --resume runs/sar_voc/deeplab/resnest101/default/model_best.pth.tar --eval
 # # lr 0.0001
 #         # no warm       warm 1      warm 2
 # # 30    
-# # 40 
+# # 40                                
 
 
 # adam
