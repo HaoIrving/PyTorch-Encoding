@@ -240,22 +240,22 @@ class Trainer():
 
         is_best = False
         self.model.eval()
-        total_inter, total_union, total_correct, total_label, total_pred = 0, 0, 0, 0, 0
+        total_inter, total_union, total_correct, total_label, total_lab = 0, 0, 0, 0, 0
         tbar = tqdm(self.valloader, desc='\r')
         for i, (image, target) in enumerate(tbar):
             with torch.no_grad():
-                correct, labeled, inter, union, area_pred = eval_batch(self.model, image, target)
+                correct, labeled, inter, union, area_lab = eval_batch(self.model, image, target)
 
             total_correct += correct
             total_label += labeled
             total_inter += inter
             total_union += union
-            total_pred += area_pred
+            total_lab += area_lab
             pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
             IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
             mIoU = IoU.mean()
 
-            freq = 1.0 * total_pred / (np.spacing(1) + total_label)
+            freq = 1.0 * total_lab / (np.spacing(1) + total_label)
             fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
 
             tbar.set_description(
@@ -275,7 +275,7 @@ class Trainer():
         if is_best:
             print('best epoch: {}'.format(epoch+1))
 
-
+# https://github.com/zhanghang1989/PyTorch-Encoding/issues/283
 if __name__ == "__main__":
     args = Options().parse()
     torch.manual_seed(args.seed)

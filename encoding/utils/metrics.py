@@ -32,14 +32,14 @@ def accuracy(output, target, topk=(1,)):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
-def get_pixacc_miou(total_correct, total_label, total_inter, total_union, total_pred):
+def get_pixacc_miou(total_correct, total_label, total_inter, total_union, total_lab):
     pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
     IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
     mIoU = IoU.mean()
-    freq = 1.0 * total_pred / (np.spacing(1) + total_label)
+    freq = 1.0 * total_lab / (np.spacing(1) + total_label)
     fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
-
-    return pixAcc, mIoU, fwIoU
+    
+    return pixAcc, mIoU, fwIoU, total_lab
     
 
 class SegmentationMetric(object):
@@ -54,14 +54,14 @@ class SegmentationMetric(object):
         def evaluate_worker(self, label, pred):
             correct, labeled = batch_pix_accuracy(
                 pred, label)
-            inter, union, area_pred = batch_intersection_union(
+            inter, union, area_lab = batch_intersection_union(
                 pred, label, self.nclass)
             with self.lock:
                 self.total_correct += correct
                 self.total_label += labeled
                 self.total_inter += inter
                 self.total_union += union
-                self.total_pred += area_pred
+                self.total_lab += area_lab
             return
 
         if isinstance(preds, torch.Tensor):
@@ -89,7 +89,7 @@ class SegmentationMetric(object):
         self.total_union = 0
         self.total_correct = 0
         self.total_label = 0
-        self.total_pred = 0
+        self.total_lab = 0
         return
 
 def batch_pix_accuracy(output, target):
@@ -133,7 +133,7 @@ def batch_intersection_union(output, target, nclass):
     area_union = area_pred + area_lab - area_inter
     assert (area_inter <= area_union).all(), \
         "Intersection area should be smaller than Union area"
-    return area_inter, area_union, area_pred
+    return area_inter, area_union, area_lab
 
 
 # ref https://github.com/CSAILVision/sceneparsing/blob/master/evaluationCode/utils_eval.py

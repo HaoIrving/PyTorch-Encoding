@@ -16,4 +16,6 @@ python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269
 
 
 # adam
+
+# circle loss, focal loss
  
