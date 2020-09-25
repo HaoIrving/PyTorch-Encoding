@@ -183,9 +183,9 @@ def test(args):
                 mask.save(os.path.join(outdir, outname))
 
     if args.eval:
-        print('freq0: %.3f, freq1: %.3f, freq2: %.3f, freq3: %.3f, freq4: %.3f, freq5: %.3f, freq6: %.3f' % \
+        print('freq0: %.5f, freq1: %.5f, freq2: %.5f, freq3: %.5f, freq4: %.5f, freq5: %.5f, freq6: %.5f' % \
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
-        print('IoU0:  %.3f, IoU1:  %.3f, IoU2:  %.3f, IoU3:  %.3f, IoU4:  %.3f, IoU5:  %.3f, IoU6:  %.3f' % \
+        print('IoU0:  %.5f, IoU1:  %.5f, IoU2:  %.5f, IoU3:  %.5f, IoU4:  %.5f, IoU5:  %.5f, IoU6:  %.5f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
 
 class ReturnFirstClosure(object):
