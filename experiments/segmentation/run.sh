@@ -8,9 +8,9 @@ python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest26
 python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 
 # lr 0.0001
-        # no warm       warm 
+        # no warm       warm 1  warm 2
 # 10    0.3237 10   
-# 15    0.3430 15       1 
+# 15    0.3430 15       
 # 20    
 
 # 15 warm    
