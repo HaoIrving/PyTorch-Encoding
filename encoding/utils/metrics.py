@@ -82,7 +82,7 @@ class SegmentationMetric(object):
         return self.total_correct, self.total_label, self.total_inter, self.total_union
 
     def get(self):
-        return get_pixacc_miou(self.total_correct, self.total_label, self.total_inter, self.total_union, self.total_pred)
+        return get_pixacc_miou(self.total_correct, self.total_label, self.total_inter, self.total_union, self.total_lab)
  
     def reset(self):
         self.total_inter = 0
