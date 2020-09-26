@@ -142,6 +142,7 @@ def get_deeplab(dataset='pascal_voc', backbone='resnet50s', pretrained=False, pr
         for key in mis_matchs:
             checkpoint.pop(key)
         model.load_state_dict(checkpoint, strict=False)
+        print("Using deeplab {} model pretrained on {}".format(backbone, pretrained_dataset))
         # model.load_state_dict(torch.load(
         #     get_model_file('deeplab_%s_%s'%(backbone, acronyms[pretrained_dataset]), root=root)), strict=False)
 

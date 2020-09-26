@@ -100,6 +100,8 @@ class Options():
                             help='number of warmup epochs to train (default: auto)')
         parser.add_argument('--use-pretrain', action='store_true', default= False,
                             help='use pretraining model on a different dataset')
+        parser.add_argument('--frozen-stages', type=int, default=-1, metavar='N', # 4, -1
+                            help='number of warmup epochs to train (default: auto)')
 
         # the parser
         self.parser = parser
@@ -156,10 +158,10 @@ class Trainer():
                                          drop_last=False, shuffle=False, **kwargs)
         self.nclass = trainset.num_class
         # model
-        if args.use_pretrain:
+        if args.use_pretrain: # args.frozen_stages should be set meanwhile
             model = get_segmentation_model(args.model, dataset=args.dataset,
                                         backbone = args.backbone, pretrained=True, pretrained_dataset='ade20k', 
-                                        aux = args.aux,
+                                        frozen_stages=args.frozen_stages, aux = args.aux,
                                         se_loss = args.se_loss, norm_layer = SyncBatchNorm,
                                         base_size=args.base_size, crop_size=args.crop_size)
         if not args.use_pretrain:

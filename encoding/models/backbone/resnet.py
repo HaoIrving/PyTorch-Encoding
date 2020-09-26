@@ -140,7 +140,7 @@ class ResNet(nn.Module):
         - Yu, Fisher, and Vladlen Koltun. "Multi-scale context aggregation by dilated convolutions."
     """
     # pylint: disable=unused-variable
-    def __init__(self, block, layers, radix=1, groups=1, bottleneck_width=64,
+    def __init__(self, block, layers, radix=1, groups=1, bottleneck_width=64, frozen_stages=-1,
                  num_classes=1000, dilated=False, dilation=1,
                  deep_stem=False, stem_width=64, avg_down=False,
                  rectified_conv=False, rectify_avg=False,
@@ -216,6 +216,26 @@ class ResNet(nn.Module):
             elif isinstance(m, norm_layer):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+        
+        self.frozen_stages = frozen_stages
+        print("frozen_stages is {}".format(frozen_stages))
+        self._freeze_stages()
+
+    def _freeze_stages(self):
+        """Freeze stages param and norm stats."""
+        if self.frozen_stages >= 0:
+            self.conv1.eval()
+            for param in self.conv1.parameters():
+                param.requires_grad = False
+            self.bn1.eval()
+            for param in self.bn1.parameters():
+                param.requires_grad = False
+
+        for i in range(1, self.frozen_stages + 1):
+            m = getattr(self, f'layer{i}')
+            m.eval()
+            for param in m.parameters():
+                param.requires_grad = False
 
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1, norm_layer=None,
                     dropblock_prob=0.0, is_first=True):
