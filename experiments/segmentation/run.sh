@@ -1,5 +1,3 @@
-git pull origin
-
 cd ../..
 python setup.py install
 
