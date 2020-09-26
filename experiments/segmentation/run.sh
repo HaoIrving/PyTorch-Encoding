@@ -1,9 +1,11 @@
+git pull origin
+
 cd ../..
 python setup.py install
 
 cd experiments/segmentation
 
-python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 30 --warmup-epochs 2 --use-pretrain --frozen-stages 4
+python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages 4
 python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 # # lr 0.0001
 # # imagenet pretrain   warm 2 (fz 0)
@@ -17,7 +19,7 @@ python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269
 # IoU 0: 0.950798, IoU 1: 0.569489, IoU 2: 0.395693, IoU 3: 0.665571, IoU 4: 0.284397, IoU 5: 0.192148, IoU 6: 0.207530
 
 # # ade20k pretrain     warm 2 (fz 0)      warm 2 & fz 4
-# # 30                  
+# # 30                  0.4039
 
 # adam
 
