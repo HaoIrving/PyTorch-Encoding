@@ -95,8 +95,12 @@ class Options():
         # test option
         parser.add_argument('--test-folder', type=str, default=None,
                             help='path to test image folder')
+        # 
         parser.add_argument('--warmup-epochs', type=int, default=1, metavar='N',
-                            help='number of epochs to train (default: auto)')
+                            help='number of warmup epochs to train (default: auto)')
+        parser.add_argument('--use-pretrain', action='store_true', default= False,
+                            help='use pretraining model on a different dataset')
+
         # the parser
         self.parser = parser
 
@@ -152,15 +156,17 @@ class Trainer():
                                          drop_last=False, shuffle=False, **kwargs)
         self.nclass = trainset.num_class
         # model
-        # model = get_segmentation_model(args.model, dataset=args.dataset,
-        #                                backbone = args.backbone, pretrained=True, pretrained_dataset='ade20k', 
-        #                                aux = args.aux,
-        #                                se_loss = args.se_loss, norm_layer = SyncBatchNorm,
-        #                                base_size=args.base_size, crop_size=args.crop_size)
-        model = get_segmentation_model(args.model, dataset=args.dataset,
-                                       backbone = args.backbone, aux = args.aux,
-                                       se_loss = args.se_loss, norm_layer = SyncBatchNorm,
-                                       base_size=args.base_size, crop_size=args.crop_size)
+        if args.use_pretrain:
+            model = get_segmentation_model(args.model, dataset=args.dataset,
+                                        backbone = args.backbone, pretrained=True, pretrained_dataset='ade20k', 
+                                        aux = args.aux,
+                                        se_loss = args.se_loss, norm_layer = SyncBatchNorm,
+                                        base_size=args.base_size, crop_size=args.crop_size)
+        if not args.use_pretrain:
+            model = get_segmentation_model(args.model, dataset=args.dataset,
+                                        backbone = args.backbone, aux = args.aux,
+                                        se_loss = args.se_loss, norm_layer = SyncBatchNorm,
+                                        base_size=args.base_size, crop_size=args.crop_size)
         # print(model)
         # optimizer using different LR
         params_list = [{'params': model.pretrained.parameters(), 'lr': args.lr},]
