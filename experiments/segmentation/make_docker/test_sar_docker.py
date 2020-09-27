@@ -93,10 +93,11 @@ def test(args):
     args.model = "deeplab"
     args.aux = True
     args.backbone = "resnest269"
-    args.resume = "runs/sar_voc/deeplab/resnest269/best/model_best.pth.tar"
+    args.resume = "model_best.pth.tar"
     args.eval = True
     # output folder
-    outdir = 'outdir'
+    indir = "/input_path"
+    outdir = '/output_path'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     # data transforms
@@ -127,7 +128,7 @@ def test(args):
         model.base_size = args.base_size
         model.crop_size = args.crop_size
     else:
-        model = get_segmentation_model(args.model, dataset=args.dataset,
+        model = get_segmentation_model(args.model, dataset=args.dataset, root='/encoding/models',
                                        backbone=args.backbone, aux = args.aux,
                                        se_loss=args.se_loss,
                                        norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,

@@ -15,3 +15,5 @@ build
 dist
 torch_*
 .vscode
+experiments/segmentation/make_docker/model_best.pth.tar
+experiments/segmentation/make_docker/encoding/models/resnest269-51ae5f19.pth

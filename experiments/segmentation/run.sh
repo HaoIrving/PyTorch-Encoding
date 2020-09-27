@@ -5,6 +5,7 @@ cd experiments/segmentation
 
 python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
 python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
+
 # # lr 0.0001
 # # imagenet pretrain   warm 2 (fz -1)
 #         # no warm      
@@ -22,3 +23,6 @@ python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269
 # adam
 
 # circle loss, focal loss
+
+# cp ~/qiaohong/SAR/PyTorch-Encoding/experiments/segmentation/runs/sar_voc/deeplab/resnest269/best/model_best.pth.tar ~/qiaohong/
+# python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume make_docker/model_best.pth.tar --eval
