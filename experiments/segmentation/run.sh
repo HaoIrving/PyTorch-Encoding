@@ -18,7 +18,7 @@ python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269
 
 # # ade20k pretrain     warm 2 (fz -1)       warm 2 & fz 4
 # # 30                  0.4039              0.3831 26
-
+# # 400                 overfit
 # adam
 
 # circle loss, focal loss

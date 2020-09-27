@@ -43,7 +43,7 @@ class LR_Scheduler(object):
         self.warmup_iters = warmup_epochs * iters_per_epoch
         self.total_iters = (num_epochs - warmup_epochs) * iters_per_epoch
 
-    def __call__(self, optimizer, i, epoch, best_pred):
+    def __call__(self, optimizer, i, epoch, best_pred, best_epoch):
         T = epoch * self.iters_per_epoch + i
         # warm up lr schedule
         if self.warmup_iters > 0 and T < self.warmup_iters:
@@ -61,7 +61,7 @@ class LR_Scheduler(object):
         if epoch > self.epoch and (epoch == 0 or best_pred > 0.0):
             if not self.quiet:
                 print('\n=>Epoch %i, learning rate = %.10f, \
-                    previous best = %.4f' % (epoch+1, lr, best_pred))
+                    previous best = %.4f at epoch %i' % (epoch+1, lr, best_pred, best_epoch))
             self.epoch = epoch
         assert lr >= 0
         self._adjust_learning_rate(optimizer, lr)

@@ -211,13 +211,14 @@ class Trainer():
         self.scheduler = utils.LR_Scheduler_Head(args.lr_scheduler, args.lr,
                                                  args.epochs, len(self.trainloader), warmup_epochs=args.warmup_epochs)
         self.best_pred = 0.0
+        self.best_epoch = 0
 
     def training(self, epoch):
         train_loss = 0.0
         self.model.train()
         tbar = tqdm(self.trainloader)
         for i, (image, target) in enumerate(tbar):
-            self.scheduler(self.optimizer, i, epoch, self.best_pred)
+            self.scheduler(self.optimizer, i, epoch, self.best_pred, self.best_epoch)
             self.optimizer.zero_grad()
             outputs = self.model(image)
             loss = self.criterion(outputs, target)
@@ -282,6 +283,7 @@ class Trainer():
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
+            self.best_epoch = epoch + 1
         if is_best:
             print('best epoch: {}'.format(epoch+1))
         utils.save_checkpoint({
