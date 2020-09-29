@@ -1,19 +1,19 @@
 import xml.etree.ElementTree as ET
 import os
-def __indent(elem, level=0):
-    i = "\n" + level*"\t"
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-             elem.text = i + "\t"
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            __indent(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
+# def __indent(elem, level=0):
+#     i = "\n" + level*"\t"
+#     if len(elem):
+#         if not elem.text or not elem.text.strip():
+#              elem.text = i + "\t"
+#         if not elem.tail or not elem.tail.strip():
+#             elem.tail = i
+#         for elem in elem:
+#             __indent(elem, level+1)
+#         if not elem.tail or not elem.tail.strip():
+#             elem.tail = i
+#     else:
+#         if level and (not elem.tail or not elem.tail.strip()):
+#             elem.tail = i
 
 root=ET.Element('annotation')
 root.text='\n'

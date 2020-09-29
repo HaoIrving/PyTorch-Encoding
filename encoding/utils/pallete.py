@@ -23,6 +23,8 @@ def get_mask_pallete(npimg, dataset='detail'):
         out_img.putpalette(citypallete)
     elif dataset in ('detail', 'pascal_voc', 'pascal_aug'):
         out_img.putpalette(vocpallete)
+    elif dataset == 'sar_voc':
+        out_img.putpalette(sarvocpallete)
     return out_img
 
 def _get_voc_pallete(num_cls):
@@ -41,6 +43,8 @@ def _get_voc_pallete(num_cls):
                     i = i + 1
                     lab >>= 3
     return pallete
+
+sarvocpallete = [0,0,0, 0,255,255, 0,0,255, 255,255,0, 0,255,0, 255,0,0, 255,255,255]
 
 vocpallete = _get_voc_pallete(256)
 

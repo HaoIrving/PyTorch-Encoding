@@ -252,26 +252,30 @@ class Trainer():
         is_best = False
         self.model.eval()
         total_inter, total_union, total_correct, total_label, total_lab = 0, 0, 0, 0, 0
-        tbar = tqdm(self.valloader, desc='\r')
-        for i, (image, target) in enumerate(tbar):
-            with torch.no_grad():
-                correct, labeled, inter, union, area_lab = eval_batch(self.model, image, target)
+        try:
+            tbar = tqdm(self.valloader, desc='\r')
+            for i, (image, target) in enumerate(tbar):
+                with torch.no_grad():
+                    correct, labeled, inter, union, area_lab = eval_batch(self.model, image, target)
 
-            total_correct += correct
-            total_label += labeled
-            total_inter += inter
-            total_union += union
-            total_lab += area_lab
-            pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
-            IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
-            mIoU = IoU.mean()
+                total_correct += correct
+                total_label += labeled
+                total_inter += inter
+                total_union += union
+                total_lab += area_lab
+                pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
+                IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
+                mIoU = IoU.mean()
 
-            freq = 1.0 * total_lab / (np.spacing(1) + total_label)
-            fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
+                freq = 1.0 * total_lab / (np.spacing(1) + total_label)
+                fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
 
-            tbar.set_description(
-                'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
-
+                tbar.set_description(
+                    'pixAcc: %.3f, mIoU: %.3f, fwIoU: %.3f' % (pixAcc, mIoU, fwIoU))
+        except KeyboardInterrupt:
+            tbar.close()
+            raise
+        tbar.close()
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \

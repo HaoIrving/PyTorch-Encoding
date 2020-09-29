@@ -4,7 +4,7 @@ python setup.py install
 cd experiments/segmentation
 
 python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
---batch-size 30 --epochs 30 --warmup-epochs 2 
+--batch-size 30 --epochs 100 --warmup-epochs 2 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
 python test_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
@@ -12,9 +12,8 @@ python test_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab -
 
 # # lr 0.0001
 # # imagenet pretrain   warm 2 (fz -1)
-#         # no warm      
-# # 30    0.3710 2
-# # 40                  0.4546
+# # 30    0.3710 2      0.4230 27
+# # 100                  
 # # 500                 0.5598 402
 
 # pixAcc: 0.7011, mIoU: 0.4665, fwIoU: 0.5598

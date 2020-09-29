@@ -8,6 +8,7 @@ import os
 import argparse
 import numpy as np
 from tqdm import tqdm
+import xml.etree.ElementTree as ET
 
 import torch
 from torch.utils import data
@@ -81,6 +82,8 @@ class Options():
         #
         parser.add_argument('--docker', action='store_true', default= False,
                             help='generate masks on val set')
+        parser.add_argument('--c1', action='store_true', default= False,
+                            help='generate masks on val set')
 
         # the parser
         self.parser = parser
@@ -100,7 +103,10 @@ def test(args):
     args.resume = "model_best.pth.tar"
     # args.eval = True
     args.docker = True
-    # output folder
+    args.c1 = True
+    # args.c2 = True
+
+    # folder
     indir = "/input_path"
     outdir = '/output_path'
     if not os.path.exists(outdir):
@@ -117,8 +123,11 @@ def test(args):
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
-    elif args.docker:
-        testset = get_dataset(args.dataset, split='val', mode='docker', indir=indir, 
+    elif args.docker and args.c1:
+        testset = get_dataset(args.dataset, split='c1', mode='docker', indir=indir, 
+                              transform=input_transform)
+    elif args.docker and args.c2:
+        testset = get_dataset(args.dataset, split='c2', mode='docker', indir=indir, 
                               transform=input_transform)
     else:
         testset = get_dataset(args.dataset, split='test', mode='test',
@@ -196,18 +205,87 @@ def test(args):
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
                 mask = utils.get_mask_pallete(predict, args.dataset)
-                outname = os.path.splitext(impath)[0] + '.png'
+                basename = os.path.splitext(impath)[0]
+                basename = basename.split('_')[0]
+                outname = basename + '_gt.png'
                 mask.save(os.path.join(outdir, outname))
+                get_xml(basename)
 
     if args.eval:
-        # print('freq0: %.5f, freq1: %.5f, freq2: %.5f, freq3: %.5f, freq4: %.5f, freq5: %.5f, freq6: %.5f' % \
-        #     (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
-        # print('IoU0:  %.5f, IoU1:  %.5f, IoU2:  %.5f, IoU3:  %.5f, IoU4:  %.5f, IoU5:  %.5f, IoU6:  %.5f' % \
-        #     (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def get_xml(filename):
+    root=ET.Element('annotation')
+    root.text='\n'
+    tree=ET.ElementTree(root)
+
+    #parameters to set
+    #filename=os.walk('/input_path')[2]
+    filename=filename
+    resultfile=filename.split('.')[0]+'_gt.png'
+    resultfile_xml='./'+filename.split('.')[0]+'.xml'
+    organization='CASIA'
+    author='1,2,3,4,5,6'
+
+    element_source=ET.Element('source')
+    element_source.text='\n'+7*' '
+    element_source.tail='\n'+4*' '
+    element_filename=ET.Element('filename')
+    element_filename.tail='\n'+7*' '
+    element_filename.text=filename
+
+    element_origin=ET.Element('origin')
+    element_origin.tail='\n'+4*' '
+    element_origin.text='GF2/GF3'
+    element_research=ET.Element('research')
+    element_research.text='\n'+7*' '
+    element_research.tail='\n'+4*' '
+    element_version=ET.Element('version')
+    element_version.tail='\n'+7*' '
+    element_version.text='4.0'
+    element_provider=ET.Element('provider')
+    element_provider.tail='\n'+7*' '
+    element_provider.text=organization
+    element_author=ET.Element('author')
+    element_author.text=author
+    element_author.tail='\n'+7*' '
+    element_pluginname=ET.Element('pluginname')
+    element_pluginname.tail='\n'+7*' '
+    element_pluginname.text='地物标注'
+    element_pluginclass=ET.Element('pluginclass')
+    element_pluginclass.tail='\n'+7*' '
+    element_pluginclass.text='标注'
+    element_time=ET.Element('time')
+    element_time.tail='\n'+4*' '
+    element_time.text='2020-07-2020-11'
+    element_seg=ET.Element('segmentation')
+    element_seg.text='\n'+7*' '
+    element_seg.tail='\n'
+    element_resultfile=ET.Element('resultflie')
+    element_resultfile.tail='\n'+4*' '
+    element_resultfile.text=resultfile
+
+    #add
+    element_source.append(element_filename)
+    element_source.append(element_origin)
+
+    element_research.append(element_version)
+    element_research.append(element_provider)
+    element_research.append(element_author)
+    element_research.append(element_pluginname)
+    element_research.append(element_pluginclass)
+    element_research.append(element_time)
+
+    element_seg.append(element_resultfile)
+
+    root.append(element_source)
+    root.append(element_research)
+    root.append(element_seg)
+    #write
+    tree.write(resultfile_xml,encoding='utf-8',xml_declaration=True)
 
 class ReturnFirstClosure(object):
     def __init__(self, data):
