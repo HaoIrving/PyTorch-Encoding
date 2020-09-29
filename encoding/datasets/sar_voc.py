@@ -54,8 +54,7 @@ class VOCSegmentation_sar(BaseDataset):
     def __getitem__(self, index):
         # img = Image.open(self.images[index]).convert('RGB')
         img_f = open(self.images[index], 'rb') 
-        img_np = pickle.load(img_f)
-        img = img_np.transpose(1, 2, 0)  # 512,512,3
+        img = pickle.load(img_f) # 512,512,3
         if self.mode == 'test':
             if self.transform is not None:
                 img = self.transform(img)
