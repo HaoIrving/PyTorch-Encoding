@@ -40,7 +40,7 @@ class Options():
                             help='crop image size')
         parser.add_argument('--train-split', type=str, default='train',
                             help='dataset train split (default: train)')
-        parser.add_argument('--child', type=str, default='log_normal_c3',
+        parser.add_argument('--child', type=str, default='log_normal_new_c1',
                             help='dataset name (default: pascal12)')                            
         # training hyper params
         parser.add_argument('--aux', action='store_true', default= False,

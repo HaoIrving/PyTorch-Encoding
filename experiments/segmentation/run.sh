@@ -3,7 +3,8 @@ python setup.py install
 
 cd experiments/segmentation
 
-python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
+python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 30 --warmup-epochs 2 
+# python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
 python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 
 # # lr 0.0001
@@ -20,6 +21,7 @@ python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269
 # # ade20k pretrain     warm 2 (fz -1)       warm 2 & fz 4
 # # 30                  0.4039              0.3831 26
 # # 400                 overfit
+
 # adam
 
 # circle loss, focal loss

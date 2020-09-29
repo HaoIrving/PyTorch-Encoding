@@ -78,6 +78,10 @@ class Options():
         # test option
         parser.add_argument('--test-folder', type=str, default=None,
                             help='path to test image folder')
+        #
+        parser.add_argument('--docker', action='store_true', default= False,
+                            help='generate masks on val set')
+
         # the parser
         self.parser = parser
 
@@ -94,7 +98,8 @@ def test(args):
     args.aux = True
     args.backbone = "resnest269"
     args.resume = "model_best.pth.tar"
-    args.eval = True
+    # args.eval = True
+    args.docker = True
     # output folder
     indir = "/input_path"
     outdir = '/output_path'
@@ -111,6 +116,9 @@ def test(args):
                               transform=input_transform)
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',
+                              transform=input_transform)
+    elif args.docker:
+        testset = get_dataset(args.dataset, split='val', mode='docker', indir=indir, 
                               transform=input_transform)
     else:
         testset = get_dataset(args.dataset, split='test', mode='test',
