@@ -85,7 +85,7 @@ class VOCSegmentation_sar(BaseDataset):
             # general resize, normalize and toTensor
             if self.transform is not None:
                 img = self.transform(img)
-                if img.type == 'torch.DoubleTensor':
+                if img.type() == 'torch.DoubleTensor':
                     img = img.type(torch.FloatTensor)
             if self.target_transform is not None:
                 target = self.target_transform(target)
