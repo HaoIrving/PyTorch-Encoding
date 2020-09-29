@@ -165,26 +165,31 @@ def test(args):
     evaluator.eval()
     metric = utils.SegmentationMetric(testset.num_class)
 
-    tbar = tqdm(test_data)
-    for i, (image, dst) in enumerate(tbar):
-        if args.eval:
-            with torch.no_grad():
-                predicts = evaluator.parallel_forward(image)
-                # outputs = model(image)
-                # outputs = gather(outputs, 0, dim=0)
-                # pred = outputs[0]
-                metric.update(dst, predicts)
-                pixAcc, mIoU, fwIoU, freq, IoU = metric.get()
-                tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
-        else:
-            with torch.no_grad():
-                outputs = evaluator.parallel_forward(image)
-                predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
-                            for output in outputs]
-            for predict, impath in zip(predicts, dst):
-                mask = utils.get_mask_pallete(predict, args.dataset)
-                outname = os.path.splitext(impath)[0] + '.png'
-                mask.save(os.path.join(outdir, outname))
+    try:
+        tbar = tqdm(test_data)
+        for i, (image, dst) in enumerate(tbar):
+            if args.eval:
+                with torch.no_grad():
+                    predicts = evaluator.parallel_forward(image)
+                    # outputs = model(image)
+                    # outputs = gather(outputs, 0, dim=0)
+                    # pred = outputs[0]
+                    metric.update(dst, predicts)
+                    pixAcc, mIoU, fwIoU, freq, IoU = metric.get()
+                    tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
+            else:
+                with torch.no_grad():
+                    outputs = evaluator.parallel_forward(image)
+                    predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
+                                for output in outputs]
+                for predict, impath in zip(predicts, dst):
+                    mask = utils.get_mask_pallete(predict, args.dataset)
+                    outname = os.path.splitext(impath)[0] + '.png'
+                    mask.save(os.path.join(outdir, outname))
+    except KeyboardInterrupt:
+        tbar.close()
+        raise
+    tbar.close()
 
     if args.eval:
         # print('freq0: %.5f, freq1: %.5f, freq2: %.5f, freq3: %.5f, freq4: %.5f, freq5: %.5f, freq6: %.5f' % \
