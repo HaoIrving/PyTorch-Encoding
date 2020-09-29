@@ -78,6 +78,9 @@ class Options():
         # test option
         parser.add_argument('--test-folder', type=str, default=None,
                             help='path to test image folder')
+        # 
+        parser.add_argument('--child', type=str, default='log_normal_new_c1',
+                            help='dataset name (default: pascal12)')                            
         # the parser
         self.parser = parser
 
@@ -99,7 +102,7 @@ def test(args):
         ])
     # dataset
     if args.eval:
-        testset = get_dataset(args.dataset, split='val', mode='testval',
+        testset = get_dataset(args.dataset, split='val', mode='testval', child=args.child, 
                               transform=input_transform)
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',

@@ -3,9 +3,12 @@ python setup.py install
 
 cd experiments/segmentation
 
-python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 30 --warmup-epochs 2 
-# python train_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
-python test_sar.py --dataset sar_voc --model deeplab --aux --backbone resnest269 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
+python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
+--batch-size 30 --epochs 30 --warmup-epochs 2 
+# python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
+# --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
+python test_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
+--resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 
 # # lr 0.0001
 # # imagenet pretrain   warm 2 (fz -1)

@@ -66,7 +66,7 @@ class VOCSegmentation_sar(BaseDataset):
             # img = Image.open(self.images[index]).convert('RGB')
             img_f = open(self.images[index], 'rb') 
             img = pickle.load(img_f) # 512,512,3
-            if self.mode == 'test':
+            if self.mode == 'test': # not used
                 if self.transform is not None:
                     img = self.transform(img)
                 return img, os.path.basename(self.images[index])
@@ -85,6 +85,8 @@ class VOCSegmentation_sar(BaseDataset):
             # general resize, normalize and toTensor
             if self.transform is not None:
                 img = self.transform(img)
+                if img.type == 'torch.DoubleTensor':
+                    img = img.type(torch.FloatTensor)
             if self.target_transform is not None:
                 target = self.target_transform(target)
             return img, target
