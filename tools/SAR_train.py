@@ -78,6 +78,7 @@ class ProcessTiff:
 		self.all_zero = []
 		self.max_log_pix = None
 		self.max_log_denoise_pix = 0
+		self.max_log_denoise_normal_pix = 0
 		self.have_zero_aft_log = []
 
 	def get_new_split(self):
@@ -170,7 +171,7 @@ class ProcessTiff:
 	def tiff_np_log(self, img_path, x, th=2):
 		im_datas_org = cv2.imread(img_path, -1)
 		if im_datas_org is None:
-			print(x)
+			print('{} is None'.format(x))
 		im_datas_org = np.clip(im_datas_org, th, None)
 		im_datas = np.log(im_datas_org)
 		max_pix = im_datas.max()
@@ -214,10 +215,12 @@ class ProcessTiff:
 		HH, HV, VH, VV = self.cat_4(img_paths, x, th=2)
 		self.max_log_denoise_pix = max(self.max_log_denoise_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
-		HH = HH / 10.6507 # 10.553297276390468439899450459052
-		HV = HV / 10.6507
-		VH = VH / 10.6507
-		VV = VV / 10.6507
+		HH = HH / 10.553297276390468439899450459052
+		HV = HV / 10.553297276390468439899450459052
+		VH = VH / 10.553297276390468439899450459052
+		VV = VV / 10.553297276390468439899450459052
+
+		self.max_log_denoise_normal_pix = max(self.max_log_denoise_normal_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
 		tmp = np.sqrt(HH * HH + VV * VV)
 		if tmp.min() == 0:
@@ -239,6 +242,15 @@ class ProcessTiff:
 		:return:
 		"""
 		HH, HV, VH, VV = self.cat_4(img_paths, x, th=2)
+
+		self.max_log_denoise_pix = max(self.max_log_denoise_pix, HH.max(), HV.max(), VH.max(), VV.max())
+
+		HH = HH / 10.553297276390468439899450459052
+		HV = HV / 10.553297276390468439899450459052
+		VH = VH / 10.553297276390468439899450459052
+		VV = VV / 10.553297276390468439899450459052
+
+		self.max_log_denoise_normal_pix = max(self.max_log_denoise_normal_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
 		tmp1 = np.abs(HV + VH)
 		tmp2 = HH + VV
@@ -315,6 +327,7 @@ class ProcessTiff:
 
 		print(self.all_zero)
 		print("max_log_denoise_pix is (%.30f)" % self.max_log_denoise_pix)
+		print("max_log_denoise_normal_pix is (%.30f)" % self.max_log_denoise_normal_pix)
 		print(self.have_zero_aft_log)
 		print("Finised")
 		return
