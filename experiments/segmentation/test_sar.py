@@ -166,7 +166,7 @@ def test(args):
     metric = utils.SegmentationMetric(testset.num_class)
 
     try:
-        tbar = tqdm(test_data)
+        tbar = tqdm(test_data, ncols=10)
         for i, (image, dst) in enumerate(tbar):
             if args.eval:
                 with torch.no_grad():
