@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image, ImageOps, ImageFilter
 from tqdm import tqdm
 import pickle
+import cv2
 
 import torch
 from .base import BaseDataset
@@ -93,9 +94,9 @@ class VOCSegmentation_sar(BaseDataset):
         if self.mode == 'docker':
             img_paths = self.images[index * 4: index * 4 + 4]
             if self.split == 'c1':
-                im = self.combination_1(img_paths) # 512 512 3
+                img = self.combination_1(img_paths) # 512 512 3
             if self.split == 'c2':
-                im = self.combination_2(img_paths)
+                img = self.combination_2(img_paths)
             if self.transform is not None:
                 img = self.transform(img)
                 if img.type() == 'torch.DoubleTensor':

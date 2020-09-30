@@ -107,8 +107,9 @@ def test(args):
     # args.c2 = True
 
     # folder
-    indir = "/input_path"
-    outdir = '/output_path'
+    # indir = "experiments/segmentation/make_docker/input_path"
+    indir = "input_path"
+    outdir = './output_path'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     # data transforms
@@ -145,7 +146,7 @@ def test(args):
         model.base_size = args.base_size
         model.crop_size = args.crop_size
     else:
-        model = get_segmentation_model(args.model, dataset=args.dataset, root='/encoding/models',
+        model = get_segmentation_model(args.model, dataset=args.dataset, root='.',
                                        backbone=args.backbone, aux = args.aux,
                                        se_loss=args.se_loss,
                                        norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
@@ -209,7 +210,7 @@ def test(args):
                 basename = basename.split('_')[0]
                 outname = basename + '_gt.png'
                 mask.save(os.path.join(outdir, outname))
-                get_xml(basename)
+                get_xml(outdir, basename)
 
     if args.eval:
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
@@ -217,7 +218,7 @@ def test(args):
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
 
-def get_xml(filename):
+def get_xml(outdir, filename):
     root=ET.Element('annotation')
     root.text='\n'
     tree=ET.ElementTree(root)
@@ -226,7 +227,8 @@ def get_xml(filename):
     #filename=os.walk('/input_path')[2]
     filename=filename
     resultfile=filename.split('.')[0]+'_gt.png'
-    resultfile_xml='./'+filename.split('.')[0]+'.xml'
+    resultfile_xml = filename.split('.')[0]+'.xml'
+    resultfile_xml = os.path.join(outdir, resultfile_xml)
     organization='CASIA'
     author='1,2,3,4,5,6'
 

@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: docker",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: train sar",
             "type": "python",
             "request": "launch",
@@ -12,8 +19,23 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "--dataset", "sar_voc", "--child", "log_normal_new_c1", "--model", "deeplab", "--aux", "--backbone", "resnest269", 
-                "--batch-size", "1", "--epochs", "30", "--warmup-epochs", "2", "--workers", "0",
+                "--dataset",
+                "sar_voc",
+                "--child",
+                "log_normal_new_c1",
+                "--model",
+                "deeplab",
+                "--aux",
+                "--backbone",
+                "resnest269",
+                "--batch-size",
+                "1",
+                "--epochs",
+                "30",
+                "--warmup-epochs",
+                "2",
+                "--workers",
+                "0",
             ]
         }
     ]

@@ -15,4 +15,4 @@ build
 dist
 torch_*
 experiments/segmentation/make_docker/model_best.pth.tar
-experiments/segmentation/make_docker/resnest269-51ae5f19.pth
+experiments/segmentation/make_docker/resnest269-51ae5f19.*
