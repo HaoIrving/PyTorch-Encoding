@@ -21,6 +21,7 @@ from encoding.parallel import DataParallelModel, DataParallelCriterion
 from encoding.datasets import get_dataset, test_batchify_fn
 from encoding.models import get_model, get_segmentation_model, MultiEvalModule
 
+print('wo yunxing le')
 
 class Options():
     def __init__(self):

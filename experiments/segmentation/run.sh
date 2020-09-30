@@ -5,7 +5,7 @@ cd experiments/segmentation
 
 
 python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model deeplab --aux --backbone resnest269 \
---batch-size 30 --epochs 30 --warmup-epochs 2 
+--batch-size 30 --epochs 300 --warmup-epochs 2 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
@@ -14,8 +14,8 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model dee
 --resume runs/sar_voc/deeplab/resnest269/default/model_best.pth.tar --eval
 
 # # lr 0.0001
-# # imagenet pretrain   warm 2 (fz -1)
-# # 30    0.3710 2      0.4230 27
+# # imagenet pretrain   warm 2 (fz -1)      with noise
+# # 30    0.3710 2      0.4230 27           0.4255 30
 # # 100                 0.5390 97
 # # 200                 0.5792 184
 # # 300                 0.5905 284
