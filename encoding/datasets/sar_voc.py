@@ -19,7 +19,7 @@ class VOCSegmentation_sar(BaseDataset):
     ]
     NUM_CLASS = 7
 
-    def __init__(self, root=os.path.expanduser('~/.encoding/data'), split='train', indir=None,
+    def __init__(self, root=os.path.expanduser('~/.encoding/data'), split='train', indir=None, denoise=False, 
                  mode=None, child='log_normal_c3', transform=None, target_transform=None, **kwargs):
         super(VOCSegmentation_sar, self).__init__(root, split, mode, transform,
                                                   target_transform, **kwargs)
@@ -42,6 +42,7 @@ class VOCSegmentation_sar(BaseDataset):
             raise RuntimeError('Unknown dataset split.')
         self.images = []
         self.masks = []
+        self.denoise = denoise
         if self.mode != 'docker':
             with open(os.path.join(_split_f), "r") as lines:
                 for line in tqdm(lines):
@@ -105,10 +106,11 @@ class VOCSegmentation_sar(BaseDataset):
 
     def combination_1(self, img_paths):
         HH, HV, VH, VV = self.cat_4(img_paths, th=2)
-        HH = HH / 10.553297276390468439899450459052
-        HV = HV / 10.553297276390468439899450459052
-        VH = VH / 10.553297276390468439899450459052
-        VV = VV / 10.553297276390468439899450459052
+        if self.denoise:
+            HH = HH / 10.553297276390468439899450459052
+            HV = HV / 10.553297276390468439899450459052
+            VH = VH / 10.553297276390468439899450459052
+            VV = VV / 10.553297276390468439899450459052
         tmp = np.sqrt(HH * HH + VV * VV)
         channel_0 = VH / HH
         channel_0 = channel_0[:, :, np.newaxis]
@@ -121,10 +123,11 @@ class VOCSegmentation_sar(BaseDataset):
 
     def combination_2(self, img_paths):
         HH, HV, VH, VV = self.cat_4(img_paths, th=2)
-        HH = HH / 10.553297276390468439899450459052
-        HV = HV / 10.553297276390468439899450459052
-        VH = VH / 10.553297276390468439899450459052
-        VV = VV / 10.553297276390468439899450459052
+        if self.denoise:
+            HH = HH / 10.553297276390468439899450459052
+            HV = HV / 10.553297276390468439899450459052
+            VH = VH / 10.553297276390468439899450459052
+            VV = VV / 10.553297276390468439899450459052
         tmp1 = np.abs(HV + VH)
         tmp2 = HH + VV
         channel_0 = np.sqrt(tmp1 * tmp2)
@@ -148,7 +151,8 @@ class VOCSegmentation_sar(BaseDataset):
         im_datas_org = np.clip(im_datas_org, th, None)
         im_datas = np.log(im_datas_org)
         im_datas = im_datas / 11.090339660644531250
-        im_datas = denoise(im_datas, im_datas_org)
+        if self.denoise:
+            im_datas = denoise(im_datas, im_datas_org)
         return im_datas
 
     def _mask_transform(self, mask):

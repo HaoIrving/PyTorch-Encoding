@@ -20,6 +20,7 @@ from encoding.nn import SegmentationLosses, SyncBatchNorm
 from encoding.parallel import DataParallelModel, DataParallelCriterion
 from encoding.datasets import get_dataset, test_batchify_fn
 from encoding.models import get_model, get_segmentation_model, MultiEvalModule
+from PIL import Image
 
 
 class Options():
@@ -84,6 +85,10 @@ class Options():
                             help='generate masks on val set')
         parser.add_argument('--c1', action='store_true', default= False,
                             help='generate masks on val set')
+        parser.add_argument('--c2', action='store_true', default= False,
+                            help='generate masks on val set')
+        parser.add_argument('--denoise', action='store_true', default= False,
+                            help='generate masks on val set')
 
         # the parser
         self.parser = parser
@@ -100,11 +105,13 @@ def test(args):
     args.model = "deeplab"
     args.aux = True
     args.backbone = "resnest269"
-    args.resume = "model_best_denoise_5905.pth.tar"
+    args.resume = "model_best_noise_5999.pth.tar"
     # args.eval = True
     args.docker = True
     args.c1 = True
     # args.c2 = True
+    # args.denoise = True
+    args.denoise = False
 
     # folder
     # indir = "experiments/segmentation/make_docker/input_path"
@@ -125,7 +132,7 @@ def test(args):
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
     elif args.docker and args.c1:
-        testset = get_dataset(args.dataset, split='c1', mode='docker', indir=indir, 
+        testset = get_dataset(args.dataset, split='c1', mode='docker', indir=indir, denoise=args.denoise,
                               transform=input_transform)
     elif args.docker and args.c2:
         testset = get_dataset(args.dataset, split='c2', mode='docker', indir=indir, 
@@ -206,11 +213,14 @@ def test(args):
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
                 mask = utils.get_mask_pallete(predict, args.dataset)
+                mask_gray = Image.fromarray(predict.squeeze().astype('uint8')) #
                 basename = os.path.splitext(impath)[0]
                 basename = basename.split('_')[0]
-                outname = basename + '_gt.png'
+                outname = basename + '_visualize.png'#
+                outname_gray = basename + '_feature.png'#
                 mask.save(os.path.join(outdir, outname))
-                get_xml(outdir, basename)
+                mask_gray.save(os.path.join(outdir, outname_gray))#
+                # get_xml(outdir, basename)#
 
     if args.eval:
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
