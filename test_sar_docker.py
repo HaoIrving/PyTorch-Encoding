@@ -100,7 +100,7 @@ def test(args):
     args.model = "deeplab"
     args.aux = True
     args.backbone = "resnest269"
-    args.resume = "model_best_denoise_5905.pth.tar"
+    args.resume = "model_best_noise_6272.pth.tar"
     # args.eval = True
     args.docker = True
     args.c1 = True
@@ -108,8 +108,8 @@ def test(args):
 
     # folder
     # indir = "experiments/segmentation/make_docker/input_path"
-    indir = "input_path"
-    outdir = './output_path'
+    indir = "/input_path"
+    outdir = '/output_path'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     # data transforms
