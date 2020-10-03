@@ -105,7 +105,7 @@ def test(args):
     args.model = "deeplab"
     args.aux = True
     args.backbone = "resnest269"
-    args.resume = "model_best_noise_5999.pth.tar"
+    args.resume = "model_best_noise_6272.pth.tar"
     # args.eval = True
     args.docker = True
     args.c1 = True
