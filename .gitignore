@@ -20,3 +20,4 @@ experiments/segmentation/make_docker/model_best*
 experiments/segmentation/make_docker/resnest269-51ae5f19.*
 model_best.pth.tar
 resnest269-51ae5f19.*
+outdir

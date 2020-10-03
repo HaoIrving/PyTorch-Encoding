@@ -8,6 +8,7 @@ import os
 import argparse
 import numpy as np
 from tqdm import tqdm
+from PIL import Image
 
 import torch
 from torch.utils import data
@@ -108,7 +109,7 @@ def test(args):
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
     else:
-        testset = get_dataset(args.dataset, split='test', mode='test',
+        testset = get_dataset(args.dataset, split='val', mode='test', child=args.child, 
                               transform=input_transform)
     # dataloader
     loader_kwargs = {'num_workers': args.workers, 'pin_memory': True} \
@@ -159,8 +160,8 @@ def test(args):
         return
 
     # TODO: using multi scale testing
-    scales = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25] if args.dataset == 'citys' else \
-            []# [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]#, 2.0
+    # scales = [0.75, 1.0, 1.25]#, 2.0
+    scales = []
     evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
     evaluator.eval()
     metric = utils.SegmentationMetric(testset.num_class)
@@ -184,8 +185,14 @@ def test(args):
                                 for output in outputs]
                 for predict, impath in zip(predicts, dst):
                     mask = utils.get_mask_pallete(predict, args.dataset)
-                    outname = os.path.splitext(impath)[0] + '.png'
+                    mask_gray = Image.fromarray(predict.squeeze().astype('uint8')) #
+                    basename = os.path.splitext(impath)[0]
+                    basename = basename.split('_')[0]
+                    basename = str(int(basename) + 1)
+                    outname = basename + '_visualize.png'#
+                    outname_gray = basename + '_feature.png'#
                     mask.save(os.path.join(outdir, outname))
+                    mask_gray.save(os.path.join(outdir, outname_gray))#
     except KeyboardInterrupt:
         tbar.close()
         raise

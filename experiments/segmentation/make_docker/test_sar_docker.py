@@ -218,7 +218,7 @@ def test(args):
                 basename = basename.split('_')[0]
                 outname = basename + '_visualize.png'#
                 outname_gray = basename + '_feature.png'#
-                mask.save(os.path.join(outdir, outname))
+                # mask.save(os.path.join(outdir, outname))
                 mask_gray.save(os.path.join(outdir, outname_gray))#
                 # get_xml(outdir, basename)#
 

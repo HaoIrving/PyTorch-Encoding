@@ -151,8 +151,9 @@ class MultiEvalModule(DataParallel):
         with torch.cuda.device_of(image):
             scores = image.new().resize_(batch,self.nclass,h,w).zero_().cuda()
 
-        outputs = module_inference(self.module, image, False)
-        scores += outputs
+        if len(self.scales) == 0:
+            outputs = module_inference(self.module, image, False)
+            scores += outputs
 
         for scale in self.scales:
             long_size = int(math.ceil(self.base_size * scale))
