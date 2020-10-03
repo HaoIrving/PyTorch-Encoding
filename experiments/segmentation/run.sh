@@ -31,6 +31,8 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model enc
 # freq0: 0.061955, freq1: 0.078376, freq2: 0.163651, freq3: 0.357225, freq4: 0.298697, freq5: 0.016080, freq6: 0.024017                                    | 8/17 [00:34<00:29,  3.22s/it]
 # IoU 0: 0.959670, IoU 1: 0.673592, IoU 2: 0.538992, IoU 3: 0.611297, IoU 4: 0.660384, IoU 5: 0.185302, IoU 6: 0.339777
 
+# encnet                wo se               w se
+# 400                   
 
 # adam
 
@@ -41,3 +43,35 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model enc
 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 300 --warmup-epochs 2 --resume runs/sar_voc/deeplab/resnest269/default/checkpoint.pth.tar
+
+# The ratio of class 0 is (0.058547342463991770833420247300)
+# The ratio of class 1 is (0.086003739926268862880931465043)
+# The ratio of class 2 is (0.180170923996913590059421039768)
+# The ratio of class 3 is (0.362124059177812096521620333078)
+# The ratio of class 4 is (0.276800937607167341081293443494)
+# The ratio of class 5 is (0.015108341049382715756688178033)
+# The ratio of class 6 is (0.021244655778463648887477432936)
+
+# The ratio of class 0 is (0.058466728515624996620481113041)
+# The ratio of class 1 is (0.085990172526041672163010787244)
+# The ratio of class 2 is (0.180229236111111107421223209712)
+# The ratio of class 3 is (0.362021213107638906159024827502)
+# The ratio of class 4 is (0.276933541124131932242846687586)
+# The ratio of class 5 is (0.015110536024305554897440018181)
+# The ratio of class 6 is (0.021248572591145833965420308687)
+
+# The ratio of class 0 is (0.058466728515624996620481113041)
+# The ratio of class 1 is (0.085990172526041672163010787244)
+# The ratio of class 2 is (0.180229236111111107421223209712)
+# The ratio of class 3 is (0.362021213107638906159024827502)
+# The ratio of class 4 is (0.276933541124131932242846687586)
+# The ratio of class 5 is (0.015110536024305554897440018181)
+# The ratio of class 6 is (0.021248572591145833965420308687)
+
+# The ratio of class 0 is (0.055191559765625002043076818836)
+# The ratio of class 1 is (0.085369403320312495231370064630)
+# The ratio of class 2 is (0.183500315917968753742783860616)
+# The ratio of class 3 is (0.369634570751953106526599412973)
+# The ratio of class 4 is (0.271032675097656272633628304902)
+# The ratio of class 5 is (0.014225178271484374692423813258)
+# The ratio of class 6 is (0.021046296874999998599564676738)

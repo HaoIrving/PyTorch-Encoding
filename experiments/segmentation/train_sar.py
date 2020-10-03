@@ -169,7 +169,7 @@ class Trainer():
                                         backbone = args.backbone, aux = args.aux,
                                         se_loss = args.se_loss, norm_layer = SyncBatchNorm,
                                         base_size=args.base_size, crop_size=args.crop_size)
-        # print(model)
+        print(model)
         # optimizer using different LR
         params_list = [{'params': model.pretrained.parameters(), 'lr': args.lr},]
         if hasattr(model, 'head'):

@@ -29,7 +29,7 @@
                 "--child",
                 "log_normal_new_c1",
                 "--model",
-                "encnet",
+                "deeplab",
                 "--aux",
                 "--backbone",
                 "resnest269",
