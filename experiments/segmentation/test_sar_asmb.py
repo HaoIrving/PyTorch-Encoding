@@ -133,13 +133,13 @@ def test(args):
 
     # MODEL ASSEMBLE
     local = False
-    # local = True
+    local = True
     if local:
         resume = [
             "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
             # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
             "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
-            # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
+            "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
             # "experiments/segmentation/make_docker/psp_noise_6122.pth.tar",
             # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
             ]
@@ -149,12 +149,12 @@ def test(args):
         12        
         """
         resume = [
-            "best/psp_noise_6596.pth.tar",
-            # "best/psp_noise_6549.pth.tar",
-            # "best/deeplab_noise_6272.pth.tar", 
+            # "best/psp_noise_6596.pth.tar",
+            "best/psp_noise_6549.pth.tar",
+            "best/deeplab_noise_6272.pth.tar", 
             "best/encnet_noise_6190.pth.tar", 
             # "best/psp_noise_6122.pth.tar",
-            "best/deeplab_noise_5999.pth.tar", 
+            # "best/deeplab_noise_5999.pth.tar", 
             ]
 
     ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
@@ -167,7 +167,6 @@ def test(args):
         "deeplab_noise_5999":  [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
     }
     assemble_nums = len(resume)
-    # models = defaultdict()
     scales = []
     evaluators = defaultdict()
     weights = []
@@ -198,7 +197,6 @@ def test(args):
             checkpoint = torch.load(args.resume)
             # strict=False, so that it is compatible with old pytorch saved models
             model.load_state_dict(checkpoint['state_dict'])
-            # models[i] =  model
             print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
         elif not pretrained:
             raise RuntimeError ("=> no checkpoint found")
@@ -208,8 +206,6 @@ def test(args):
         evaluators[i] = evaluator
     
     metric = utils.SegmentationMetric(testset.num_class)
-
-    
 
     try:
         tbar = tqdm(test_data)#, ncols=10)

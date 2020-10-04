@@ -9,6 +9,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
+from collections import defaultdict
 
 import torch
 from torch.utils import data
@@ -141,38 +142,62 @@ def test(args):
     test_data = data.DataLoader(testset, batch_size=args.test_batch_size,
                                 drop_last=False, shuffle=False,
                                 collate_fn=test_batchify_fn, **loader_kwargs)
-    # model
-    pretrained = args.resume is None and args.verify is None
-    if args.model_zoo is not None:
-        model = get_model(args.model_zoo, pretrained=pretrained)
-        model.base_size = args.base_size
-        model.crop_size = args.crop_size
-    else:
-        model = get_segmentation_model(args.model, dataset=args.dataset, root='.',
-                                       backbone=args.backbone, aux = args.aux,
-                                       se_loss=args.se_loss,
-                                       norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
-                                       base_size=args.base_size, crop_size=args.crop_size)
-
-    # resuming checkpoint
-    if args.verify is not None and os.path.isfile(args.verify):
-        print("=> loading checkpoint '{}'".format(args.verify))
-        model.load_state_dict(torch.load(args.verify))
-    elif args.resume is not None and os.path.isfile(args.resume):
-        checkpoint = torch.load(args.resume)
-        # strict=False, so that it is compatible with old pytorch saved models
-        model.load_state_dict(checkpoint['state_dict'])
-        print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
-    elif not pretrained:
-        raise RuntimeError ("=> no checkpoint found")
-
-    # print(model)
     
+    # MODEL ASSEMBLE
+    resume = [
+        "psp_noise_6596.pth.tar",
+        "deeplab_noise_6272.pth.tar", 
+        "encnet_noise_6190.pth.tar", 
+        ]
+    ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
+    ioutable = {
+        "psp_noise_6596":      [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
+        "psp_noise_6549":      [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
+        "deeplab_noise_6272":  [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
+        "encnet_noise_6190":   [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
+        "psp_noise_6122":      [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
+        "deeplab_noise_5999":  [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
+    }
+    assemble_nums = len(resume)
+    scales = []
+    evaluators = defaultdict()
+    weights = []
+    for i in range(assemble_nums):
+        ioukey  = ioukeys[i]
+        iou     = ioutable[ioukey] # [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777]
+        weights.append(iou)
+    weights = np.array(weights)
+    weights = weights / weights.sum(0) # restrict to [0, 1]
+    weights = torch.from_numpy(weights).float()
 
-    # TODO: using multi scale testing
-    scales = []# [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]#, 2.0
-    evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
-    evaluator.eval()
+    for i in range(assemble_nums):
+        args.resume = resume[i]
+        modelname = args.resume.split("/")[-1]
+        args.model  = modelname.split("_")[0]
+        # model
+        pretrained = args.resume is None and args.verify is None
+        model = get_segmentation_model(args.model, dataset=args.dataset, root='.',
+                                    backbone=args.backbone, aux = args.aux,
+                                    se_loss=args.se_loss,
+                                    norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
+                                    base_size=args.base_size, crop_size=args.crop_size)
+
+        # resuming checkpoint
+        if args.verify is not None and os.path.isfile(args.verify):
+            print("=> loading checkpoint '{}'".format(args.verify))
+            model.load_state_dict(torch.load(args.verify))
+        elif args.resume is not None and os.path.isfile(args.resume):
+            checkpoint = torch.load(args.resume)
+            # strict=False, so that it is compatible with old pytorch saved models
+            model.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
+        elif not pretrained:
+            raise RuntimeError ("=> no checkpoint found")
+        # print(model)
+        evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
+        evaluator.eval()
+        evaluators[i] = evaluator
+
     metric = utils.SegmentationMetric(testset.num_class)
 
     tbar = tqdm(test_data)
@@ -188,7 +213,16 @@ def test(args):
                 tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
         else:
             with torch.no_grad():
-                outputs = evaluator.parallel_forward(image)
+                # model_assemble
+                predicts = []
+                for i in range(assemble_nums):
+                    predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                    predicts.append(predict)
+                
+                weighted_asmb = True
+                if weighted_asmb:
+                    outputs = model_assemble(predicts, weights, assemble_nums)
+
                 predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
@@ -204,6 +238,25 @@ def test(args):
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def model_assemble(predicts, weights, n_models):
+    """
+    predicts: list(list(tensor))
+    weights: np array, 3 * 7
+    array([[0.32884602, 0.35279618, 0.37274472, 0.33282369, 0.33551868, 0.50490792, 0.51098302],
+           [0.33436919, 0.32227972, 0.31616551, 0.33620111, 0.33316617, 0.32393472, 0.27449629],
+           [0.33678479, 0.32492411, 0.31108977, 0.3309752 , 0.33131515, 0.17115736, 0.21452069]])
+    """
+    ngpus = len(predicts[0])
+    assembled = [torch.zeros_like(predicts[0][i]) for i in range(ngpus)]
+    for i in range(n_models):
+        predict = predicts[i] # [tensor([1, 7, 512, 512], cuda0), tensor(cuda1)]
+        for cuda_index, pred in enumerate(predict): # tensor([1, 7, 512, 512], cuda0)
+            pred = pred.transpose(1, 2).transpose(2, 3).contiguous() # [1, 512, 512, 7]
+            pred = pred * weights[i].cuda(pred.device) # [1, 512, 512, 7], [7]
+            pred = pred.transpose(2, 3).transpose(1, 2).contiguous() # [1, 7, 512, 512]
+            assembled[cuda_index] += pred
+    return assembled
 
 def get_xml(outdir, filename):
     root=ET.Element('annotation')
