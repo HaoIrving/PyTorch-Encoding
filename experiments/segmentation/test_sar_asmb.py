@@ -132,22 +132,27 @@ def test(args):
 
     # MODEL ASSEMBLE
     local = False
+    # local = True
     if local:
         resume = [
             "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
-            "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
+            # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
             "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
             # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
             # "experiments/segmentation/make_docker/psp_noise_6122.pth.tar",
             # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
             ]
     else:
+        """
+        023 0.6743
+
+        """
         resume = [
             "best/psp_noise_6596.pth.tar",
             # "best/psp_noise_6549.pth.tar",
             "best/deeplab_noise_6272.pth.tar", 
             "best/encnet_noise_6190.pth.tar", 
-            # "best/psp_noise_6122.pth.tar",
+            "best/psp_noise_6122.pth.tar",
             # "best/deeplab_noise_5999.pth.tar", 
             ]
 
