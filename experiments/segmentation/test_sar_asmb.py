@@ -153,8 +153,8 @@ def test(args):
             # "best/psp_noise_6549.pth.tar",
             "best/deeplab_noise_6272.pth.tar", 
             # "best/encnet_noise_6190.pth.tar", 
-            "best/psp_noise_6122.pth.tar",
-            # "best/deeplab_noise_5999.pth.tar", 
+            # "best/psp_noise_6122.pth.tar",
+            "best/deeplab_noise_5999.pth.tar", 
             ]
 
     ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
