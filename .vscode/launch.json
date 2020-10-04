@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: test sar asmb",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python: test sar",
             "type": "python",
             "request": "launch",
@@ -23,9 +31,9 @@
                 "resnest269",
                 // "--workers",
                 // "0",
-                "--resume", 
-                "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
-                "--eval", 
+                "--resume",
+                "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar",
+                "--eval",
             ]
         },
         {

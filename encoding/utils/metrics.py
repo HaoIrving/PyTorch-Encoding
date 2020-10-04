@@ -11,6 +11,7 @@
 import threading
 import numpy as np
 import torch
+import cv2
 
 __all__ = ['accuracy', 'get_pixacc_miou',
            'SegmentationMetric', 'batch_intersection_union', 'batch_pix_accuracy',
@@ -50,12 +51,12 @@ class SegmentationMetric(object):
         self.lock = threading.Lock()
         self.reset()
 
-    def update(self, labels, preds):
-        def evaluate_worker(self, label, pred):
+    def update(self, labels, preds, weighted_asmb=True, postproc=True):
+        def evaluate_worker(self, label, pred, weighted_asmb=True, postproc=True):
             correct, labeled = batch_pix_accuracy(
-                pred, label)
+                pred, label, weighted_asmb=weighted_asmb, postproc=postproc)
             inter, union, area_lab = batch_intersection_union(
-                pred, label, self.nclass)
+                pred, label, self.nclass, weighted_asmb=weighted_asmb, postproc=postproc)
             with self.lock:
                 self.total_correct += correct
                 self.total_label += labeled
@@ -65,10 +66,10 @@ class SegmentationMetric(object):
             return
 
         if isinstance(preds, torch.Tensor):
-            evaluate_worker(self, labels, preds)
+            evaluate_worker(self, labels, preds, weighted_asmb=weighted_asmb, postproc=postproc)
         elif isinstance(preds, (list, tuple)):
             threads = [threading.Thread(target=evaluate_worker,
-                                        args=(self, label, pred),
+                                        args=(self, label, pred, weighted_asmb, postproc),
                                        )
                        for (label, pred) in zip(labels, preds)]
             for thread in threads:
@@ -92,15 +93,41 @@ class SegmentationMetric(object):
         self.total_lab = 0
         return
 
-def batch_pix_accuracy(output, target):
+def postprocess(predict):
+    """both
+    18 0.6575
+    17 0.6583
+    16 0.6576
+    """
+    ret = np.zeros_like(predict)
+    for i in range(predict.shape[0]):
+        img = predict[i].astype('uint8')
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
+        opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
+        closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+        ret[i] = closing
+        # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
+        # kernel = np.ones((18, 18), np.uint8)
+        # opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)
+        # ret[i] = opening
+
+    return ret
+
+
+def batch_pix_accuracy(output, target, weighted_asmb=False, postproc=False):
     """Batch Pixel Accuracy
     Args:
         predict: input 4D tensor
         target: label 3D tensor
     """
-    _, predict = torch.max(output, 1)
+    _, predict = torch.max(output, 1) # 1, 512, 512
 
-    predict = predict.cpu().numpy().astype('int64') + 1
+    predict = predict.cpu().numpy()
+    if postproc:
+        predict = postprocess(predict)
+    predict = predict.astype('int64') + 1
     target = target.cpu().numpy().astype('int64') + 1
 
     pixel_labeled = np.sum(target > 0)
@@ -110,7 +137,7 @@ def batch_pix_accuracy(output, target):
     return pixel_correct, pixel_labeled
 
 
-def batch_intersection_union(output, target, nclass):
+def batch_intersection_union(output, target, nclass, weighted_asmb=False, postproc=False):
     """Batch Intersection of Union
     Args:
         predict: input 4D tensor
@@ -121,7 +148,11 @@ def batch_intersection_union(output, target, nclass):
     mini = 1
     maxi = nclass
     nbins = nclass
-    predict = predict.cpu().numpy().astype('int64') + 1
+
+    predict = predict.cpu().numpy()
+    if postproc:
+        predict = postprocess(predict)
+    predict = predict.astype('int64')  + 1
     target = target.cpu().numpy().astype('int64') + 1
 
     predict = predict * (target > 0).astype(predict.dtype)

@@ -179,7 +179,7 @@ class Trainer():
         optimizer = torch.optim.SGD(params_list, lr=args.lr,
             momentum=args.momentum, weight_decay=args.weight_decay)
         # criterions
-        weight=torch.from_numpy(np.array([1.49489796, 1., 0.47954173, 0.24342287, 0.32162459, 5.86, 4.26699029])).float()
+        weight = torch.from_numpy(np.array([1.49489796, 1., 0.47954173, 0.24342287, 0.32162459, 5.86, 4.26699029])).float()
         self.criterion = SegmentationLosses(se_loss=args.se_loss,
                                             aux=args.aux,
                                             nclass=self.nclass, 
