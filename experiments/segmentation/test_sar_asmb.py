@@ -150,8 +150,8 @@ def test(args):
         """
         resume = [
             "best/psp_noise_6596.pth.tar",
-            "best/psp_noise_6549.pth.tar",
-            # "best/deeplab_noise_6272.pth.tar", 
+            # "best/psp_noise_6549.pth.tar",
+            "best/deeplab_noise_6272.pth.tar", 
             # "best/encnet_noise_6190.pth.tar", 
             # "best/psp_noise_6122.pth.tar",
             # "best/deeplab_noise_5999.pth.tar", 
@@ -231,7 +231,16 @@ def test(args):
                     tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
             else:
                 with torch.no_grad():
-                    outputs = evaluator.parallel_forward(image)
+                    # model_assemble
+                    predicts = []
+                    for i in range(assemble_nums):
+                        predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                        predicts.append(predict)
+                    
+                    weighted_asmb = True
+                    if weighted_asmb:
+                        outputs = model_assemble(predicts, weights, assemble_nums)
+
                     predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                                 for output in outputs]
                 for predict, impath in zip(predicts, dst):
