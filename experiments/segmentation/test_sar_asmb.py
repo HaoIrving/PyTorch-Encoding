@@ -98,7 +98,8 @@ def test(args):
     args.child = "log_normal_new_noise_c1"
     args.aux = True
     args.backbone = "resnest269"
-    args.eval = True
+    # args.eval = True
+
     # args.workers = 0
 
     # args.model = "deeplab"
@@ -144,13 +145,12 @@ def test(args):
             ]
     else:
         """
-        02
         023         0.6743
-        02345        
+        12        
         """
         resume = [
-            "best/psp_noise_6596.pth.tar",
-            # "best/psp_noise_6549.pth.tar",
+            # "best/psp_noise_6596.pth.tar",
+            "best/psp_noise_6549.pth.tar",
             "best/deeplab_noise_6272.pth.tar", 
             # "best/encnet_noise_6190.pth.tar", 
             # "best/psp_noise_6122.pth.tar",
