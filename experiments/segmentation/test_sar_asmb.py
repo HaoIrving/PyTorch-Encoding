@@ -10,6 +10,7 @@ import numpy as np
 from tqdm import tqdm
 from PIL import Image
 from collections import defaultdict
+import cv2
 # import copy
 
 import torch
@@ -98,7 +99,7 @@ def test(args):
     args.child = "log_normal_new_noise_c1"
     args.aux = True
     args.backbone = "resnest269"
-    args.eval = True
+    # args.eval = True
 
     args.workers = 0
 
@@ -138,8 +139,8 @@ def test(args):
         resume = [
             "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
             # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
-            "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
-            "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
+            # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
+            # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
             # "experiments/segmentation/make_docker/psp_noise_6122.pth.tar",
             # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
             ]
@@ -149,9 +150,9 @@ def test(args):
         12        
         """
         resume = [
-            # "best/psp_noise_6596.pth.tar",
-            "best/psp_noise_6549.pth.tar",
-            "best/deeplab_noise_6272.pth.tar", 
+            "best/psp_noise_6596.pth.tar",
+            # "best/psp_noise_6549.pth.tar",
+            # "best/deeplab_noise_6272.pth.tar", 
             "best/encnet_noise_6190.pth.tar", 
             # "best/psp_noise_6122.pth.tar",
             # "best/deeplab_noise_5999.pth.tar", 
@@ -240,6 +241,7 @@ def test(args):
                     predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                                 for output in outputs]
                 for predict, impath in zip(predicts, dst):
+                    predict = postprocess(predict)
                     mask = utils.get_mask_pallete(predict, args.dataset)
                     mask_gray = Image.fromarray(predict.squeeze().astype('uint8')) #
                     basename = os.path.splitext(impath)[0]
@@ -259,6 +261,23 @@ def test(args):
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def postprocess(predict):
+    """both
+    18 0.6575
+    17 0.6583
+    16 0.6576
+    """
+    ret = np.zeros_like(predict)
+    for i in range(predict.shape[0]):
+        img = predict[i].astype('uint8')
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
+        opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
+        closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+        ret[i] = closing
+    return ret
 
 def model_assemble(predicts, weights, n_models):
     """

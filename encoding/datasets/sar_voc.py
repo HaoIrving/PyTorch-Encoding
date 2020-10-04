@@ -104,7 +104,12 @@ class VOCSegmentation_sar(BaseDataset):
                 img = self.transform(img)
                 if img.type() == 'torch.DoubleTensor':
                     img = img.type(torch.FloatTensor)
-            return img, os.path.basename(self.images[index * 4])
+            n1 = os.path.basename(self.images[index * 4])
+            n2 = os.path.basename(self.images[index * 4 + 1])
+            n3 = os.path.basename(self.images[index * 4 + 2])
+            n4 = os.path.basename(self.images[index * 4 + 3])
+            
+            return img, [n1, n2, n3, n4]
 
     def combination_1(self, img_paths):
         HH, HV, VH, VV = self.cat_4(img_paths, th=2)

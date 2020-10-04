@@ -10,6 +10,7 @@ import numpy as np
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+import cv2
 
 import torch
 from torch.utils import data
@@ -226,18 +227,38 @@ def test(args):
                 predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
+                predict = postprocess(predict)
                 mask = utils.get_mask_pallete(predict, args.dataset)
-                basename = os.path.splitext(impath)[0]
-                basename = basename.split('_')[0]
-                outname = basename + '_gt.png'
-                mask.save(os.path.join(outdir, outname))
-                get_xml(outdir, basename)
+                # basename = basename.split('_')[0]
+                d = ["HH", "HV", "VH", "VV"]
+                for i in range(4):
+                    basename = os.path.splitext(impath[i])[0]
+                    outname = basename + '_gt.png'
+                    mask.save(os.path.join(outdir, outname))
+                    get_xml(outdir, impath[i], basename, outname)
 
     if args.eval:
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def postprocess(predict):
+    """both
+    18 0.6575
+    17 0.6583
+    16 0.6576
+    """
+    ret = np.zeros_like(predict)
+    for i in range(predict.shape[0]):
+        img = predict[i].astype('uint8')
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
+        opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
+        closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+        ret[i] = closing
+    return ret
 
 def model_assemble(predicts, weights, n_models):
     """
@@ -258,16 +279,16 @@ def model_assemble(predicts, weights, n_models):
             assembled[cuda_index] += pred
     return assembled
 
-def get_xml(outdir, filename):
+def get_xml(outdir, filename, basename, outname):
     root=ET.Element('annotation')
     root.text='\n'
     tree=ET.ElementTree(root)
 
     #parameters to set
     #filename=os.walk('/input_path')[2]
-    filename=filename
-    resultfile=filename.split('.')[0]+'_gt.png'
-    resultfile_xml = filename.split('.')[0]+'.xml'
+    filename = filename
+    resultfile = outname
+    resultfile_xml = basename + '.xml'
     resultfile_xml = os.path.join(outdir, resultfile_xml)
     organization='CASIA'
     author='1,2,3,4,5,6'
@@ -277,7 +298,7 @@ def get_xml(outdir, filename):
     element_source.tail='\n'+4*' '
     element_filename=ET.Element('filename')
     element_filename.tail='\n'+7*' '
-    element_filename.text=filename
+    element_filename.text= filename
 
     element_origin=ET.Element('origin')
     element_origin.tail='\n'+4*' '
