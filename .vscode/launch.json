@@ -24,8 +24,8 @@
                 // "--workers",
                 // "0",
                 "--resume", 
-                "experiments/segmentation/make_docker/model_best_noise_6272.pth.tar", 
-                // "--eval", 
+                "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
+                "--eval", 
             ]
         },
         {

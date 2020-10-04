@@ -255,7 +255,7 @@ class Trainer():
         self.model.eval()
         total_inter, total_union, total_correct, total_label, total_lab = 0, 0, 0, 0, 0
         try:
-            tbar = tqdm(self.valloader, desc='\r', ncols=80)
+            tbar = tqdm(self.valloader, desc='\r')
             for i, (image, target) in enumerate(tbar):
                 with torch.no_grad():
                     correct, labeled, inter, union, area_lab = eval_batch(self.model, image, target)

@@ -9,6 +9,8 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from PIL import Image
+from collections import defaultdict
+# import copy
 
 import torch
 from torch.utils import data
@@ -92,6 +94,16 @@ class Options():
         return args
 
 def test(args):
+    args.dataset = "sar_voc"
+    args.child = "log_normal_new_noise_c1"
+    args.aux = True
+    args.backbone = "resnest269"
+    args.eval = True
+    args.workers = 0
+
+    # args.model = "deeplab"
+    # args.resume = "experiments/segmentation/make_docker/model_best_noise_6272.pth.tar"
+
     # output folder
     outdir = 'outdir'
     if not os.path.exists(outdir):
@@ -117,53 +129,63 @@ def test(args):
     test_data = data.DataLoader(testset, batch_size=args.test_batch_size,
                                 drop_last=False, shuffle=False,
                                 collate_fn=test_batchify_fn, **loader_kwargs)
-    # model
-    pretrained = args.resume is None and args.verify is None
-    if args.model_zoo is not None:
-        model = get_model(args.model_zoo, pretrained=pretrained)
-        model.base_size = args.base_size
-        model.crop_size = args.crop_size
-    else:
-        model = get_segmentation_model(args.model, dataset=args.dataset,
-                                       backbone=args.backbone, aux = args.aux,
-                                       se_loss=args.se_loss,
-                                       norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
-                                       base_size=args.base_size, crop_size=args.crop_size)
 
-    # resuming checkpoint
-    if args.verify is not None and os.path.isfile(args.verify):
-        print("=> loading checkpoint '{}'".format(args.verify))
-        model.load_state_dict(torch.load(args.verify))
-    elif args.resume is not None and os.path.isfile(args.resume):
-        checkpoint = torch.load(args.resume)
-        # strict=False, so that it is compatible with old pytorch saved models
-        model.load_state_dict(checkpoint['state_dict'])
-        print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
-    elif not pretrained:
-        raise RuntimeError ("=> no checkpoint found")
-
-    # print(model)
-    if args.acc_bn:
-        from encoding.utils.precise_bn import update_bn_stats
-        data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
-                       'crop_size': args.crop_size}
-        trainset = get_dataset(args.dataset, split=args.train_split, mode='train', **data_kwargs)
-        trainloader = data.DataLoader(ReturnFirstClosure(trainset), batch_size=args.batch_size,
-                                      drop_last=True, shuffle=True, **loader_kwargs)
-        print('Reseting BN statistics')
-        #model.apply(reset_bn_statistics)
-        model.cuda()
-        update_bn_stats(model, trainloader)
-
-    if args.export:
-        torch.save(model.state_dict(), args.export + '.pth')
-        return
-
-    # TODO: using multi scale testing
-    # scales = [0.75, 1.0, 1.25]#, 2.0
+    # MODEL ASSEMBLE
+    resume = [
+        "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
+        "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
+        "experiments/segmentation/make_docker/psp_6122.pth.tar",
+        # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
+        # "experiments/segmentation/make_docker/deeplab_denoise_5905.pth.tar"
+        ]
+    ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
+    ioutable = {
+        "deeplab_noise_6272":  [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
+        "encnet_noise_6190":   [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
+        "psp_6122":            [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
+        "deeplab_noise_5999":  [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
+        # "deeplab_denoise_5905":[0.951237, 0.710608, 0.465442, 0.558243, 0.634782, 0.005291, 0.441033]
+    }
+    assemble_nums = len(resume)
+    # models = defaultdict()
     scales = []
-    evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
-    evaluator.eval()
+    evaluators = defaultdict()
+    weights = []
+    for i in range(assemble_nums):
+        ioukey  = ioukeys[i]
+        iou     = ioutable[ioukey] # [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777]
+        weights.append(iou)
+    weights = np.array(weights)
+    weights = weights / weights.sum(0) # restrict to [0, 1]
+
+    for i in range(assemble_nums):
+        args.resume = resume[i]
+        modelname = args.resume.split("/")[-1]
+        args.model  = modelname.split("_")[0]
+        # model
+        pretrained = args.resume is None and args.verify is None
+        model = get_segmentation_model(args.model, dataset=args.dataset,
+                                    backbone=args.backbone, aux = args.aux,
+                                    se_loss=args.se_loss,
+                                    norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
+                                    base_size=args.base_size, crop_size=args.crop_size)
+        # resuming checkpoint
+        if args.verify is not None and os.path.isfile(args.verify):
+            print("=> loading checkpoint '{}'".format(args.verify))
+            model.load_state_dict(torch.load(args.verify))
+        elif args.resume is not None and os.path.isfile(args.resume):
+            checkpoint = torch.load(args.resume)
+            # strict=False, so that it is compatible with old pytorch saved models
+            model.load_state_dict(checkpoint['state_dict'])
+            # models[i] =  model
+            print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
+        elif not pretrained:
+            raise RuntimeError ("=> no checkpoint found")
+
+        evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
+        evaluator.eval()
+        evaluators[i] = evaluator
+    
     metric = utils.SegmentationMetric(testset.num_class)
 
     try:
@@ -171,10 +193,13 @@ def test(args):
         for i, (image, dst) in enumerate(tbar):
             if args.eval:
                 with torch.no_grad():
-                    predicts = evaluator.parallel_forward(image)
-                    # outputs = model(image)
-                    # outputs = gather(outputs, 0, dim=0)
-                    # pred = outputs[0]
+                    # model_assemble
+                    predicts = []
+                    for i in range(assemble_nums):
+                        predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                        predicts.append(predict)
+                    predicts = model_assemble(predicts, weights, assemble_nums)
+
                     metric.update(dst, predicts)
                     pixAcc, mIoU, fwIoU, freq, IoU = metric.get()
                     tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
@@ -203,6 +228,20 @@ def test(args):
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def model_assemble(predicts, weights, n):
+    """
+    predicts: list
+    weights: np array, 
+    array([[0.2       , 0.28571429, 0.33333333],
+           [0.8       , 0.71428571, 0.66666667]])
+    """
+    for i in range(n):
+        predict = predicts[i] # [tensor([1, 7, 512, 512], cuda0), tensor]
+
+
+
+    return predict
 
 class ReturnFirstClosure(object):
     def __init__(self, data):

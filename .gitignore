@@ -16,7 +16,7 @@ dist
 torch_*
 experiments/segmentation/make_docker/input_path
 experiments/segmentation/make_docker/output_path
-experiments/segmentation/make_docker/model_best*
+experiments/segmentation/make_docker/*.pth.tar
 experiments/segmentation/make_docker/resnest269-51ae5f19.*
 model_best.pth.tar
 resnest269-51ae5f19.*
