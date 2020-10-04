@@ -98,7 +98,7 @@ def test(args):
     args.child = "log_normal_new_noise_c1"
     args.aux = True
     args.backbone = "resnest269"
-    # args.eval = True
+    args.eval = True
 
     # args.workers = 0
 
