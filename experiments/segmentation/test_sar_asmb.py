@@ -255,7 +255,7 @@ def model_assemble(predicts, weights, n_models):
            [0.33678479, 0.32492411, 0.31108977, 0.3309752 , 0.33131515, 0.17115736, 0.21452069]])
     """
     ngpus = len(predicts[0])
-    assembled = [torch.zeros_like(predicts[0][0]) for _ in range(ngpus)]
+    assembled = [torch.zeros_like(predicts[0][i]) for i in range(ngpus)]
     for i in range(n_models):
         predict = predicts[i] # [tensor([1, 7, 512, 512], cuda0), tensor(cuda1)]
         for cuda_index, pred in enumerate(predict): # tensor([1, 7, 512, 512], cuda0)
