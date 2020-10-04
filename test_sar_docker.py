@@ -97,14 +97,16 @@ class Options():
 def test(args):
     # 
     args.dataset = "sar_voc" 
-    args.model = "deeplab"
+    # args.model = "deeplab"
     args.aux = True
     args.backbone = "resnest269"
-    args.resume = "model_best_noise_6272.pth.tar"
+    # args.resume = "model_best_noise_6272.pth.tar"
     # args.eval = True
     args.docker = True
     args.c1 = True
     # args.c2 = True
+    args.workers = 0
+
 
     # folder
     # indir = "experiments/segmentation/make_docker/input_path"
@@ -165,25 +167,10 @@ def test(args):
         raise RuntimeError ("=> no checkpoint found")
 
     # print(model)
-    if args.acc_bn:
-        from encoding.utils.precise_bn import update_bn_stats
-        data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
-                       'crop_size': args.crop_size}
-        trainset = get_dataset(args.dataset, split=args.train_split, mode='train', **data_kwargs)
-        trainloader = data.DataLoader(ReturnFirstClosure(trainset), batch_size=args.batch_size,
-                                      drop_last=True, shuffle=True, **loader_kwargs)
-        print('Reseting BN statistics')
-        #model.apply(reset_bn_statistics)
-        model.cuda()
-        update_bn_stats(model, trainloader)
-
-    if args.export:
-        torch.save(model.state_dict(), args.export + '.pth')
-        return
+    
 
     # TODO: using multi scale testing
-    scales = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25] if args.dataset == 'citys' else \
-            []# [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]#, 2.0
+    scales = []# [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]#, 2.0
     evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
     evaluator.eval()
     metric = utils.SegmentationMetric(testset.num_class)

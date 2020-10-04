@@ -100,7 +100,7 @@ def test(args):
     args.backbone = "resnest269"
     args.eval = True
 
-    # args.workers = 0
+    args.workers = 0
 
     # args.model = "deeplab"
     # args.resume = "experiments/segmentation/make_docker/model_best_noise_6272.pth.tar"
@@ -151,8 +151,8 @@ def test(args):
         resume = [
             "best/psp_noise_6596.pth.tar",
             # "best/psp_noise_6549.pth.tar",
-            "best/deeplab_noise_6272.pth.tar", 
-            # "best/encnet_noise_6190.pth.tar", 
+            # "best/deeplab_noise_6272.pth.tar", 
+            "best/encnet_noise_6190.pth.tar", 
             # "best/psp_noise_6122.pth.tar",
             "best/deeplab_noise_5999.pth.tar", 
             ]
