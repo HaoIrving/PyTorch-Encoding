@@ -109,7 +109,7 @@ class VOCSegmentation_sar(BaseDataset):
             n3 = os.path.basename(self.images[index * 4 + 2])
             n4 = os.path.basename(self.images[index * 4 + 3])
             
-            return img, [n1, n2, n3, n4]
+            return img, n1 + ' ' + n2 + ' ' + n3 + ' ' +n4
 
     def combination_1(self, img_paths):
         HH, HV, VH, VV = self.cat_4(img_paths, th=2)

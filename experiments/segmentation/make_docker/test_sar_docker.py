@@ -9,6 +9,8 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
+from collections import defaultdict
+import cv2
 
 import torch
 from torch.utils import data
@@ -20,7 +22,6 @@ from encoding.nn import SegmentationLosses, SyncBatchNorm
 from encoding.parallel import DataParallelModel, DataParallelCriterion
 from encoding.datasets import get_dataset, test_batchify_fn
 from encoding.models import get_model, get_segmentation_model, MultiEvalModule
-from PIL import Image
 
 
 class Options():
@@ -85,10 +86,6 @@ class Options():
                             help='generate masks on val set')
         parser.add_argument('--c1', action='store_true', default= False,
                             help='generate masks on val set')
-        parser.add_argument('--c2', action='store_true', default= False,
-                            help='generate masks on val set')
-        parser.add_argument('--denoise', action='store_true', default= False,
-                            help='generate masks on val set')
 
         # the parser
         self.parser = parser
@@ -102,21 +99,21 @@ class Options():
 def test(args):
     # 
     args.dataset = "sar_voc" 
-    args.model = "deeplab"
+    # args.model = "deeplab"
     args.aux = True
     args.backbone = "resnest269"
-    args.resume = "model_best_noise_6272.pth.tar"
+    # args.resume = "model_best_noise_6272.pth.tar"
     # args.eval = True
     args.docker = True
     args.c1 = True
     # args.c2 = True
-    # args.denoise = True
-    args.denoise = False
+    args.workers = 0
+
 
     # folder
-    # indir = "experiments/segmentation/make_docker/input_path"
-    indir = "input_path"
-    outdir = './output_path'
+    indir = "experiments/segmentation/make_docker/input_path"
+    # indir = "./input_path"
+    outdir = 'experiments/segmentation/make_docker//output_path'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     # data transforms
@@ -132,7 +129,7 @@ def test(args):
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
     elif args.docker and args.c1:
-        testset = get_dataset(args.dataset, split='c1', mode='docker', indir=indir, denoise=args.denoise,
+        testset = get_dataset(args.dataset, split='c1', mode='docker', indir=indir, 
                               transform=input_transform)
     elif args.docker and args.c2:
         testset = get_dataset(args.dataset, split='c2', mode='docker', indir=indir, 
@@ -146,53 +143,62 @@ def test(args):
     test_data = data.DataLoader(testset, batch_size=args.test_batch_size,
                                 drop_last=False, shuffle=False,
                                 collate_fn=test_batchify_fn, **loader_kwargs)
-    # model
-    pretrained = args.resume is None and args.verify is None
-    if args.model_zoo is not None:
-        model = get_model(args.model_zoo, pretrained=pretrained)
-        model.base_size = args.base_size
-        model.crop_size = args.crop_size
-    else:
+    
+    # MODEL ASSEMBLE
+    resume = [
+        "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
+        # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
+        # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
+        ]
+    ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
+    ioutable = {
+        "psp_noise_6596":      [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
+        "psp_noise_6549":      [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
+        "deeplab_noise_6272":  [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
+        "encnet_noise_6190":   [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
+        "psp_noise_6122":      [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
+        "deeplab_noise_5999":  [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
+    }
+    assemble_nums = len(resume)
+    scales = []
+    evaluators = defaultdict()
+    weights = []
+    for i in range(assemble_nums):
+        ioukey  = ioukeys[i]
+        iou     = ioutable[ioukey] # [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777]
+        weights.append(iou)
+    weights = np.array(weights)
+    weights = weights / weights.sum(0) # restrict to [0, 1]
+    weights = torch.from_numpy(weights).float()
+
+    for i in range(assemble_nums):
+        args.resume = resume[i]
+        modelname = args.resume.split("/")[-1]
+        args.model  = modelname.split("_")[0]
+        # model
+        pretrained = args.resume is None and args.verify is None
         model = get_segmentation_model(args.model, dataset=args.dataset, root='.',
-                                       backbone=args.backbone, aux = args.aux,
-                                       se_loss=args.se_loss,
-                                       norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
-                                       base_size=args.base_size, crop_size=args.crop_size)
+                                    backbone=args.backbone, aux = args.aux,
+                                    se_loss=args.se_loss,
+                                    norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
+                                    base_size=args.base_size, crop_size=args.crop_size)
 
-    # resuming checkpoint
-    if args.verify is not None and os.path.isfile(args.verify):
-        print("=> loading checkpoint '{}'".format(args.verify))
-        model.load_state_dict(torch.load(args.verify))
-    elif args.resume is not None and os.path.isfile(args.resume):
-        checkpoint = torch.load(args.resume)
-        # strict=False, so that it is compatible with old pytorch saved models
-        model.load_state_dict(checkpoint['state_dict'])
-        print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
-    elif not pretrained:
-        raise RuntimeError ("=> no checkpoint found")
+        # resuming checkpoint
+        if args.verify is not None and os.path.isfile(args.verify):
+            print("=> loading checkpoint '{}'".format(args.verify))
+            model.load_state_dict(torch.load(args.verify))
+        elif args.resume is not None and os.path.isfile(args.resume):
+            checkpoint = torch.load(args.resume)
+            # strict=False, so that it is compatible with old pytorch saved models
+            model.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
+        elif not pretrained:
+            raise RuntimeError ("=> no checkpoint found")
+        # print(model)
+        evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
+        evaluator.eval()
+        evaluators[i] = evaluator
 
-    # print(model)
-    if args.acc_bn:
-        from encoding.utils.precise_bn import update_bn_stats
-        data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
-                       'crop_size': args.crop_size}
-        trainset = get_dataset(args.dataset, split=args.train_split, mode='train', **data_kwargs)
-        trainloader = data.DataLoader(ReturnFirstClosure(trainset), batch_size=args.batch_size,
-                                      drop_last=True, shuffle=True, **loader_kwargs)
-        print('Reseting BN statistics')
-        #model.apply(reset_bn_statistics)
-        model.cuda()
-        update_bn_stats(model, trainloader)
-
-    if args.export:
-        torch.save(model.state_dict(), args.export + '.pth')
-        return
-
-    # TODO: using multi scale testing
-    scales = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25] if args.dataset == 'citys' else \
-            []# [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]#, 2.0
-    evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
-    evaluator.eval()
     metric = utils.SegmentationMetric(testset.num_class)
 
     tbar = tqdm(test_data)
@@ -208,19 +214,29 @@ def test(args):
                 tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
         else:
             with torch.no_grad():
-                outputs = evaluator.parallel_forward(image)
+                # model_assemble
+                predicts = []
+                for i in range(assemble_nums):
+                    predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                    predicts.append(predict)
+                
+                weighted_asmb = True
+                if weighted_asmb:
+                    outputs = model_assemble(predicts, weights, assemble_nums)
+
                 predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
+                # predict = postprocess(predict)
                 mask = utils.get_mask_pallete(predict, args.dataset)
-                mask_gray = Image.fromarray(predict.squeeze().astype('uint8')) #
-                basename = os.path.splitext(impath)[0]
-                basename = basename.split('_')[0]
-                outname = basename + '_visualize.png'#
-                outname_gray = basename + '_feature.png'#
-                # mask.save(os.path.join(outdir, outname))
-                mask_gray.save(os.path.join(outdir, outname_gray))#
-                # get_xml(outdir, basename)#
+                # basename = basename.split('_')[0]
+                d = ["HH", "HV", "VH", "VV"]
+                paths = impath.split(" ")
+                for i in range(4):
+                    basename = os.path.splitext(paths[i])[0]
+                    outname = basename + '_gt.png'
+                    mask.save(os.path.join(outdir, outname))
+                    get_xml(outdir, paths[i], basename, outname)
 
     if args.eval:
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
@@ -228,16 +244,52 @@ def test(args):
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
 
-def get_xml(outdir, filename):
+def postprocess(predict):
+    """both
+    18 0.6575
+    17 0.6583
+    16 0.6576
+    """
+    ret = np.zeros_like(predict)
+    for i in range(predict.shape[0]):
+        img = predict[i].astype('uint8')
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
+        opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
+        closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+        ret[i] = closing
+    return ret
+
+def model_assemble(predicts, weights, n_models):
+    """
+    predicts: list(list(tensor))
+    weights: np array, 3 * 7
+    array([[0.32884602, 0.35279618, 0.37274472, 0.33282369, 0.33551868, 0.50490792, 0.51098302],
+           [0.33436919, 0.32227972, 0.31616551, 0.33620111, 0.33316617, 0.32393472, 0.27449629],
+           [0.33678479, 0.32492411, 0.31108977, 0.3309752 , 0.33131515, 0.17115736, 0.21452069]])
+    """
+    ngpus = len(predicts[0])
+    assembled = [torch.zeros_like(predicts[0][i]) for i in range(ngpus)]
+    for i in range(n_models):
+        predict = predicts[i] # [tensor([1, 7, 512, 512], cuda0), tensor(cuda1)]
+        for cuda_index, pred in enumerate(predict): # tensor([1, 7, 512, 512], cuda0)
+            pred = pred.transpose(1, 2).transpose(2, 3).contiguous() # [1, 512, 512, 7]
+            pred = pred * weights[i].cuda(pred.device) # [1, 512, 512, 7], [7]
+            pred = pred.transpose(2, 3).transpose(1, 2).contiguous() # [1, 7, 512, 512]
+            assembled[cuda_index] += pred
+    return assembled
+
+def get_xml(outdir, filename, basename, outname):
     root=ET.Element('annotation')
     root.text='\n'
     tree=ET.ElementTree(root)
 
     #parameters to set
     #filename=os.walk('/input_path')[2]
-    filename=filename
-    resultfile=filename.split('.')[0]+'_gt.png'
-    resultfile_xml = filename.split('.')[0]+'.xml'
+    filename = filename
+    resultfile = outname
+    resultfile_xml = basename + '.xml'
     resultfile_xml = os.path.join(outdir, resultfile_xml)
     organization='CASIA'
     author='1,2,3,4,5,6'
@@ -247,7 +299,7 @@ def get_xml(outdir, filename):
     element_source.tail='\n'+4*' '
     element_filename=ET.Element('filename')
     element_filename.tail='\n'+7*' '
-    element_filename.text=filename
+    element_filename.text= filename
 
     element_origin=ET.Element('origin')
     element_origin.tail='\n'+4*' '

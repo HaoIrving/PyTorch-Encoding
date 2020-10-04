@@ -227,7 +227,7 @@ def test(args):
                 predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
-                predict = postprocess(predict)
+                # predict = postprocess(predict)
                 mask = utils.get_mask_pallete(predict, args.dataset)
                 # basename = basename.split('_')[0]
                 d = ["HH", "HV", "VH", "VV"]
