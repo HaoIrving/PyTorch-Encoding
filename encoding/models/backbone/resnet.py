@@ -218,7 +218,7 @@ class ResNet(nn.Module):
                 m.bias.data.zero_()
         
         self.frozen_stages = frozen_stages
-        print("frozen_stages is {}".format(frozen_stages))
+        # print("frozen_stages is {}".format(frozen_stages))
         self._freeze_stages()
 
     def _freeze_stages(self):

@@ -17,3 +17,4 @@ from .loss import *
 from .rectify import *
 from .splat import SplAtConv2d
 from .dropblock import *
+from .ohem_pixel_sampler import OHEMPixelSampler
