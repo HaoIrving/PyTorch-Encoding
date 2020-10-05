@@ -103,7 +103,11 @@ class Options():
         parser.add_argument('--frozen-stages', type=int, default=-1, metavar='N', # 4, -1
                             help='number of warmup epochs to train (default: auto)')
         parser.add_argument('--ohem', action='store_true', default= False,
-                            help='use pretraining model on a different dataset')
+                            help='default is not ohem-prob, use loss')
+        parser.add_argument('--ohem-prob', action='store_true', default= False,
+                            help=' ')
+        parser.add_argument('--ohem-probth', type=float, default=0.7,
+                            help=' ')
 
         # the parser
         self.parser = parser
@@ -182,7 +186,8 @@ class Trainer():
             momentum=args.momentum, weight_decay=args.weight_decay)
         # criterions
         weight = torch.from_numpy(np.array([1.49489796, 1., 0.47954173, 0.24342287, 0.32162459, 5.86, 4.26699029])).float()
-        self.criterion = SegmentationLosses(se_loss=args.se_loss, OHEM=args.ohem,
+        self.criterion = SegmentationLosses(se_loss=args.se_loss, OHEM=args.ohem, 
+                                            ohtmprob=args.ohem_prob, ohemth=args.ohem_probth, 
                                             aux=args.aux,
                                             nclass=self.nclass, 
                                             se_weight=args.se_weight, 
