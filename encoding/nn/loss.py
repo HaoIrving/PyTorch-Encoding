@@ -109,15 +109,15 @@ class SegmentationLosses(nn.CrossEntropyLoss):
 
     def OHEMlosses(self, seg_logit, seg_label):
         """Compute segmentation loss."""
-        loss = super(SegmentationLosses, self).forward(seg_logit, seg_label)
+        losses = super(SegmentationLosses, self).forward(seg_logit, seg_label)
         seg_label = seg_label.unsqueeze(1)
-        seg_weight = self.sampler.sample(seg_logit, seg_label)
+        seg_weight = self.sampler.sample(seg_logit, seg_label, losses)
         # apply weights and do the reduction, init is 'none'
         seg_weight = seg_weight.float()
-        loss = weight_reduce_loss(
-            loss, weight=seg_weight, reduction='mean', avg_factor=None)
+        losses = weight_reduce_loss(
+            losses, weight=seg_weight, reduction='mean', avg_factor=None)
         
-        return loss
+        return losses
 
     @staticmethod
     def _get_batch_label_vector(target, nclass):

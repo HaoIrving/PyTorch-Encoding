@@ -36,7 +36,7 @@ class OHEMPixelSampler(BasePixelSampler):
         self.thresh = thresh
         self.min_kept = min_kept
 
-    def sample(self, seg_logit, seg_label):
+    def sample(self, seg_logit, seg_label, losses):
         """Sample pixels that have high loss or with low prediction confidence.
 
         Args:
@@ -69,16 +69,9 @@ class OHEMPixelSampler(BasePixelSampler):
                     min_threshold = 0.0
                 threshold = max(min_threshold, self.thresh)
                 valid_seg_weight[seg_prob[valid_mask] < threshold] = 1.
-            # else:
-            #     losses = self.context.loss_decode(
-            #         seg_logit,
-            #         seg_label,
-            #         weight=None,
-            #         ignore_index=255,
-            #         reduction_override='none')
-            #     # faster than topk according to https://github.com/pytorch/pytorch/issues/22812  # noqa
-            #     _, sort_indices = losses[valid_mask].sort(descending=True)
-            #     valid_seg_weight[sort_indices[:batch_kept]] = 1.
+            else:
+                _, sort_indices = losses[valid_mask].sort(descending=True)
+                valid_seg_weight[sort_indices[:batch_kept]] = 1.
 
             seg_weight[valid_mask] = valid_seg_weight
 

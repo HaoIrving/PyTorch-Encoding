@@ -5,7 +5,7 @@ cd experiments/segmentation
 
 
 python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp  --backbone resnest269 \
---batch-size 30 --epochs 30 --warmup-epochs 2  --aux  --ohem # --se-loss
+--batch-size 30 --epochs 10 --warmup-epochs 2  --aux  --ohem # --se-loss
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
