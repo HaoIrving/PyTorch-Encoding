@@ -53,14 +53,14 @@ class NLLMultiLabelSmooth(nn.Module):
 
 class SegmentationLosses(nn.CrossEntropyLoss):
     """2D Cross Entropy Loss with Auxilary Loss"""
-    def __init__(self, se_loss=False, se_weight=0.2, nclass=-1, OHEM=False, ohtmprob=False, ohemth=0.7,
+    def __init__(self, se_loss=False, se_weight=0.2, nclass=-1, OHEM=False, ohemprob=False, ohemth=0.7,
                  aux=False, aux_weight=0.4, weight=None,
                  ignore_index=-1):
         self.OHEM = OHEM
-        if OHEM and ohtmprob:
+        if OHEM and ohemprob:
             self.sampler = OHEMPixelSampler(thresh=ohemth, min_kept=100000) 
             super(SegmentationLosses, self).__init__(weight, None, ignore_index, reduction='none')
-        if OHEM and not ohtmprob:
+        if OHEM and not ohemprob:
             self.sampler = OHEMPixelSampler(thresh=None, min_kept=100000) 
             super(SegmentationLosses, self).__init__(weight, None, ignore_index, reduction='none')
         if not OHEM:

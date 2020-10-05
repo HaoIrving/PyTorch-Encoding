@@ -187,7 +187,7 @@ class Trainer():
         # criterions
         weight = torch.from_numpy(np.array([1.49489796, 1., 0.47954173, 0.24342287, 0.32162459, 5.86, 4.26699029])).float()
         self.criterion = SegmentationLosses(se_loss=args.se_loss, OHEM=args.ohem, 
-                                            ohtmprob=args.ohem_prob, ohemth=args.ohem_probth, 
+                                            ohemprob=args.ohem_prob, ohemth=args.ohem_probth, 
                                             aux=args.aux,
                                             nclass=self.nclass, 
                                             se_weight=args.se_weight, 
