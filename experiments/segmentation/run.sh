@@ -4,14 +4,14 @@ python setup.py install
 cd experiments/segmentation
 
 
-python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp --aux --backbone resnest269 \
---batch-size 30 --epochs 500 --warmup-epochs 2 --resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar
+python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model encnet --aux --backbone resnest269 \
+--batch-size 30 --epochs 500 --warmup-epochs 2 --resume runs/sar_voc/encnet/resnest269/default/model_best.pth.tar --se-loss
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
-python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp --aux --backbone resnest269 \
---resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar --eval 
+python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model encnet --aux --backbone resnest269 \
+--resume runs/sar_voc/encnet/resnest269/default/model_best.pth.tar --eval --se-loss
 
 # deeplab
 # # lr 0.0001
@@ -33,6 +33,7 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp
 
 # encnet                wo se               w se
 # 400                   0.6190 363
+# 500 
 # pixAcc: 0.7635, mIoU: 0.5426, fwIoU: 0.6190: 100%|������������������������������������������������������������������������������������������������������| 17/17 [00:45<00:00,  2.69s/it]
 # freq0: 0.061955, freq1: 0.078376, freq2: 0.163651, freq3: 0.357225, freq4: 0.298697, freq5: 0.016080, freq6: 0.024017                                    | 8/17 [00:35<00:30,  3.35s/it]
 # IoU 0: 0.966603, IoU 1: 0.679119, IoU 2: 0.530339, IoU 3: 0.601795, IoU 4: 0.656715, IoU 5: 0.097908, IoU 6: 0.265538 

@@ -229,14 +229,13 @@ def test(args):
             for predict, impath in zip(predicts, dst):
                 # predict = postprocess(predict)
                 mask = utils.get_mask_pallete(predict, args.dataset)
-                # basename = basename.split('_')[0]
-                d = ["HH", "HV", "VH", "VV"]
                 paths = impath.split(" ")
-                for i in range(4):
-                    basename = os.path.splitext(paths[i])[0]
-                    outname = basename + '_gt.png'
-                    mask.save(os.path.join(outdir, outname))
-                    get_xml(outdir, paths[i], basename, outname)
+                path = paths[0] # 1_HH.tiff
+                basename = os.path.splitext(path)[0] # 1_HH
+                basename = basename.split("_")[0]
+                outname = basename + '_gt.png' # 1_gt.png
+                mask.save(os.path.join(outdir, outname))
+                get_xml(outdir, path, basename, outname)
 
     if args.eval:
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
