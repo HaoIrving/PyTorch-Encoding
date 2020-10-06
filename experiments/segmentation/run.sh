@@ -12,9 +12,9 @@ python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel --mo
 # --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
 python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel --model psp  --backbone resnest269 \
 --resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar --eval  --aux #--se-loss
-# 30                        ohem prab       loss
+# 30                        ohem prab       keep4
 # fcn       0.4654 25
-# psp       0.5063 30       0.4796 30       
+# psp       0.5063 30       0.4796 30       0.5198 25
 #fcfpn      0.4734 30       
 # atten     0.4652 24
 # encnet    0.4534 30 
