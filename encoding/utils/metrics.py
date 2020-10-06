@@ -50,6 +50,7 @@ class SegmentationMetric(object):
         self.nclass = nclass
         self.lock = threading.Lock()
         self.reset()
+        self.confusion_matrix = np.zeros((nclass, nclass))
 
     def update(self, labels, preds, weighted_asmb=True, postproc=True):
         def evaluate_worker(self, label, pred, weighted_asmb=True, postproc=True):
@@ -57,12 +58,14 @@ class SegmentationMetric(object):
                 pred, label, weighted_asmb=weighted_asmb, postproc=postproc)
             inter, union, area_lab = batch_intersection_union(
                 pred, label, self.nclass, weighted_asmb=weighted_asmb, postproc=postproc)
+            hist = fast_hist(label, preds, self.nclass)
             with self.lock:
                 self.total_correct += correct
                 self.total_label += labeled
                 self.total_inter += inter
                 self.total_union += union
                 self.total_lab += area_lab
+                self.confusion_matrix += hist
             return
 
         if isinstance(preds, torch.Tensor):
@@ -83,7 +86,8 @@ class SegmentationMetric(object):
         return self.total_correct, self.total_label, self.total_inter, self.total_union
 
     def get(self):
-        return get_pixacc_miou(self.total_correct, self.total_label, self.total_inter, self.total_union, self.total_lab)
+        return get_pixacc_miou(self.total_correct, self.total_label, self.total_inter, self.total_union, self.total_lab)\
+            , self.confusion_matrix
  
     def reset(self):
         self.total_inter = 0
@@ -91,6 +95,7 @@ class SegmentationMetric(object):
         self.total_correct = 0
         self.total_label = 0
         self.total_lab = 0
+        self.confusion_matrix = np.zeros((self.nclass, self.nclass))
         return
 
 def postprocess(predict):
@@ -115,6 +120,23 @@ def postprocess(predict):
 
     return ret
 
+
+def fast_hist(label_true, label_pred, n_class):
+    _, predict = torch.max(label_pred, 1) # 1, 512, 512
+
+    predict = predict.cpu().numpy()
+    # if postproc:
+    #     predict = postprocess(predict)
+    predict = predict.astype('int64')
+    label_true = label_true.cpu().numpy().astype('int64')
+    
+    label_true = label_true.flatten()
+    predict = predict.flatten()
+    mask = (label_true >= 0) & (label_true < n_class)
+    hist = np.bincount(
+        n_class * label_true[mask].astype(int) + label_pred[mask], minlength=n_class ** 2
+    ).reshape(n_class, n_class)
+    return hist
 
 def batch_pix_accuracy(output, target, weighted_asmb=False, postproc=False):
     """Batch Pixel Accuracy

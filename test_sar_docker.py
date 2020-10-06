@@ -327,7 +327,7 @@ def get_xml(outdir, filename, basename, outname):
     element_seg=ET.Element('segmentation')
     element_seg.text='\n'+7*' '
     element_seg.tail='\n'
-    element_resultfile=ET.Element('resultflie')
+    element_resultfile=ET.Element('resultfile')
     element_resultfile.tail='\n'+4*' '
     element_resultfile.text=resultfile
 

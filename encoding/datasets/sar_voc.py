@@ -36,7 +36,7 @@ class VOCSegmentation_sar(BaseDataset):
         elif self.mode == 'testval':
             _split_f = os.path.join(_splits_dir, 'val.txt')
         elif self.mode == 'test':
-            _split_f = os.path.join(_splits_dir, 'val.txt')
+            _split_f = os.path.join(_splits_dir, 'trainval.txt')
         elif self.mode == 'docker':
             lines = [f for f in os.listdir(indir)]
             lines.sort()

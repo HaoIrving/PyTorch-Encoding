@@ -192,7 +192,7 @@ def test(args):
                     outname = basename + '_visualize.png'#
                     outname_gray = basename + '_feature.png'#
                     mask.save(os.path.join(outdir, outname))
-                    mask_gray.save(os.path.join(outdir, outname_gray))#
+                    # mask_gray.save(os.path.join(outdir, outname_gray))#
     except KeyboardInterrupt:
         tbar.close()
         raise
