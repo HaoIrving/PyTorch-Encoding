@@ -52,8 +52,11 @@ def resnest269(pretrained=False, root='~/.encoding/models', **kwargs):
                    deep_stem=True, stem_width=64, avg_down=True,
                    avd=True, avd_first=False, **kwargs)
     if pretrained:
-        model.load_state_dict(torch.load(
-            get_model_file('resnest269', root=root)), strict=True)
+        checkpoint = torch.load(get_model_file('resnest269', root=root))
+        mis_match = "conv1.0.weight"
+        if len(mis_match) != 0:
+            checkpoint.pop(mis_match)
+        model.load_state_dict(checkpoint, strict=False)
     return model
 
 def resnest50_fast(pretrained=False, root='~/.encoding/models', **kwargs):

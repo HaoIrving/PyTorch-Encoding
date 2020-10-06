@@ -168,7 +168,7 @@ class ResNet(nn.Module):
         conv_kwargs = {'average_mode': rectify_avg} if rectified_conv else {}
         if deep_stem:
             self.conv1 = nn.Sequential(
-                conv_layer(3, stem_width, kernel_size=3, stride=2, padding=1, bias=False, **conv_kwargs),
+                conv_layer(4, stem_width, kernel_size=3, stride=2, padding=1, bias=False, **conv_kwargs),
                 norm_layer(stem_width),
                 nn.ReLU(inplace=True),
                 conv_layer(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
