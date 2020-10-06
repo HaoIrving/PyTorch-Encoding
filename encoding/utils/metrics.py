@@ -33,14 +33,14 @@ def accuracy(output, target, topk=(1,)):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
-def get_pixacc_miou(total_correct, total_label, total_inter, total_union, total_lab):
+def get_pixacc_miou(total_correct, total_label, total_inter, total_union, total_lab, confusion_matrix):
     pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
     IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
     mIoU = IoU.mean()
     freq = 1.0 * total_lab / (np.spacing(1) + total_label)
     fwIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
     
-    return pixAcc, mIoU, fwIoU, freq, IoU #, total_lab
+    return pixAcc, mIoU, fwIoU, freq, IoU, confusion_matrix #, total_lab
     
 
 class SegmentationMetric(object):
@@ -58,7 +58,7 @@ class SegmentationMetric(object):
                 pred, label, weighted_asmb=weighted_asmb, postproc=postproc)
             inter, union, area_lab = batch_intersection_union(
                 pred, label, self.nclass, weighted_asmb=weighted_asmb, postproc=postproc)
-            hist = fast_hist(label, preds, self.nclass)
+            hist = fast_hist(label, pred, self.nclass)
             with self.lock:
                 self.total_correct += correct
                 self.total_label += labeled
@@ -86,8 +86,7 @@ class SegmentationMetric(object):
         return self.total_correct, self.total_label, self.total_inter, self.total_union
 
     def get(self):
-        return get_pixacc_miou(self.total_correct, self.total_label, self.total_inter, self.total_union, self.total_lab)\
-            , self.confusion_matrix
+        return get_pixacc_miou(self.total_correct, self.total_label, self.total_inter, self.total_union, self.total_lab, self.confusion_matrix)
  
     def reset(self):
         self.total_inter = 0
@@ -122,16 +121,16 @@ def postprocess(predict):
 
 
 def fast_hist(label_true, label_pred, n_class):
-    _, predict = torch.max(label_pred, 1) # 1, 512, 512
+    _, label_pred = torch.max(label_pred, 1) # 1, 512, 512
 
-    predict = predict.cpu().numpy()
+    label_pred = label_pred.cpu().numpy()
     # if postproc:
-    #     predict = postprocess(predict)
-    predict = predict.astype('int64')
+    #     label_pred = postprocess(label_pred)
+    label_pred = label_pred.astype('int64')
     label_true = label_true.cpu().numpy().astype('int64')
     
     label_true = label_true.flatten()
-    predict = predict.flatten()
+    label_pred = label_pred.flatten()
     mask = (label_true >= 0) & (label_true < n_class)
     hist = np.bincount(
         n_class * label_true[mask].astype(int) + label_pred[mask], minlength=n_class ** 2

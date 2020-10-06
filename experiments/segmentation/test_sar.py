@@ -176,7 +176,7 @@ def test(args):
                     # outputs = gather(outputs, 0, dim=0)
                     # pred = outputs[0]
                     metric.update(dst, predicts)
-                    pixAcc, mIoU, fwIoU, freq, IoU = metric.get()
+                    pixAcc, mIoU, fwIoU, freq, IoU, confusion_matrix = metric.get()
                     tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
             else:
                 with torch.no_grad():
@@ -203,6 +203,7 @@ def test(args):
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+        print(confusion_matrix)
 
 class ReturnFirstClosure(object):
     def __init__(self, data):
