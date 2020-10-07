@@ -299,6 +299,8 @@ class Trainer():
             self.best_epoch = epoch + 1
         if is_best:
             print('best epoch: {}'.format(epoch+1))
+            print("") # for display bug
+            print("")
         utils.save_checkpoint({
             'epoch': epoch + 1,
             'state_dict': self.model.module.state_dict(),
