@@ -4,21 +4,21 @@ python setup.py install
 cd experiments/segmentation
 
 
-python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp  --backbone resnest269 \
---batch-size 30 --epochs 500 --warmup-epochs 2  --aux  --ohem  --ohem-prob # --se-loss
+python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model upernet  --backbone resnest269 \
+--batch-size 30 --epochs 500 --warmup-epochs 2  --aux  # --ohem  --ohem-prob # --se-loss
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
-python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp  --backbone resnest269 \
---resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar --eval  --aux #--se-loss
+python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model upernet  --backbone resnest269 \
+--resume runs/sar_voc/upernet/resnest269/default/model_best.pth.tar --eval  --aux #--se-loss
 # 30                        ohem prab       loss
 # fcn       0.4654 25
 # psp       0.5063 30       0.4796 30       
 #fcfpn      0.4734 30       
 # atten     0.4652 24
 # encnet    0.4534 30 
-# 
+# upernet
 
 # deeplab
 # # lr 0.0001
