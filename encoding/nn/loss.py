@@ -71,6 +71,7 @@ class SegmentationLosses(nn.CrossEntropyLoss):
         self.se_weight = se_weight
         self.aux_weight = aux_weight
         self.bceloss = nn.BCELoss(weight) 
+        self.ohem_weight = 0.5
 
 
     def forward(self, *inputs):
