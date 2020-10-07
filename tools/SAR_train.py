@@ -53,7 +53,8 @@ def denoise(y, f, lambda_=1.3):
 		p1x = p1x / tmp
 		p1y = p1y / tmp
 		# Newton Method
-		g = lambda_ * (-1.0 * f * f / (np.spacing(1) + np.exp(x)) / (np.spacing(1) + np.exp(x)) + 1) + 2 * rho * (x - x0) - div(p1x, p1y)
+		g = lambda_ * (-1.0 * f * f / (np.spacing(1) + np.exp(x)) / (np.spacing(1) + np.exp(x)) + 1) + 2 * rho * (
+					x - x0) - div(p1x, p1y)
 		gp = lambda_ * 1.0 * f * f / (np.spacing(1) + np.exp(x)) / (np.spacing(1) + np.exp(x)) + 2 * rho
 		x = x - g / gp
 		xr.append(np.linalg.norm(x - x0, ord='fro') / np.linalg.norm(x0, ord='fro'))
@@ -121,6 +122,7 @@ class ProcessTiff:
 				os.makedirs(dir_)
 		train_split_f = os.path.join(splits_dir, "train" + '.txt')
 		val_split_f = os.path.join(splits_dir, "val" + '.txt')
+		trainval_split_f = os.path.join(splits_dir, "trainval" + '.txt')
 
 		if not lite:
 			if not train_split and not val_split:
@@ -130,6 +132,8 @@ class ProcessTiff:
 				fp.write('\n'.join(train_split) + '\n')
 			with open(os.path.join(splits_dir, val_split_f), 'w') as fp:
 				fp.write("\n".join(val_split) + '\n')
+			with open(os.path.join(splits_dir, trainval_split_f), 'w') as fp:
+				fp.write("\n".join(train_split + val_split) + '\n')
 			return train_split_f, val_split_f
 		if lite:
 			train_split = [str(0), str(1)]
@@ -138,6 +142,8 @@ class ProcessTiff:
 			val_split = [str(400), str(401)]
 			with open(os.path.join(splits_dir, val_split_f), 'w') as fp:
 				fp.write("\n".join(val_split) + '\n')
+			with open(os.path.join(splits_dir, trainval_split_f), 'w') as fp:
+				fp.write("\n".join(train_split + val_split) + '\n')
 			return train_split_f, val_split_f
 
 	def get_global_max(self, train_split_f, val_split_f, th=None):
@@ -180,7 +186,7 @@ class ProcessTiff:
 		# TODO: 11.090339660644531250 may change.
 		im_datas = im_datas / 11.090339660644531250
 
-		im_datas = denoise(im_datas, im_datas_org)
+		# im_datas = denoise(im_datas, im_datas_org)
 
 		return im_datas
 
@@ -215,10 +221,10 @@ class ProcessTiff:
 		HH, HV, VH, VV = self.cat_4(img_paths, x, th=2)
 		self.max_log_denoise_pix = max(self.max_log_denoise_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
-		HH = HH / 10.553297276390468439899450459052
-		HV = HV / 10.553297276390468439899450459052
-		VH = VH / 10.553297276390468439899450459052
-		VV = VV / 10.553297276390468439899450459052
+		# HH = HH / 10.553297276390468439899450459052
+		# HV = HV / 10.553297276390468439899450459052
+		# VH = VH / 10.553297276390468439899450459052
+		# VV = VV / 10.553297276390468439899450459052
 
 		self.max_log_denoise_normal_pix = max(self.max_log_denoise_normal_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
@@ -245,10 +251,10 @@ class ProcessTiff:
 
 		self.max_log_denoise_pix = max(self.max_log_denoise_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
-		HH = HH / 10.553297276390468439899450459052
-		HV = HV / 10.553297276390468439899450459052
-		VH = VH / 10.553297276390468439899450459052
-		VV = VV / 10.553297276390468439899450459052
+		# HH = HH / 10.553297276390468439899450459052
+		# HV = HV / 10.553297276390468439899450459052
+		# VH = VH / 10.553297276390468439899450459052
+		# VV = VV / 10.553297276390468439899450459052
 
 		self.max_log_denoise_normal_pix = max(self.max_log_denoise_normal_pix, HH.max(), HV.max(), VH.max(), VV.max())
 
@@ -288,6 +294,75 @@ class ProcessTiff:
 		ret = np.concatenate((channel_0, channel_1, channel_2, channel_3), axis=2)
 		return ret
 
+	def keep_4_channel(self, img_paths, x):
+		"""
+		在svm, nn上效果最好的特征组合
+		:param img_paths:
+		:param image, 4, 512, 512, 已经过log和归一化处理
+		:return:
+		"""
+		HH, HV, VH, VV = self.cat_4(img_paths, x, th=2)
+
+		tmp = np.sqrt(HH * HH + VV * VV)
+		if tmp.min() == 0:
+			self.have_zero_aft_log.append(x)
+
+		channel_0 = HH
+		channel_0 = channel_0[:, :, np.newaxis]
+		channel_1 = HV
+		channel_1 = channel_1[:, :, np.newaxis]
+		channel_2 = VH
+		channel_2 = channel_2[:, :, np.newaxis]
+		channel_3 = VV
+		channel_3 = channel_3[:, :, np.newaxis]
+		ret = np.concatenate((channel_0, channel_1, channel_2, channel_3), axis=2)
+		return ret
+
+	def keep4_4c4_2c2_10(self, img_paths, x):
+		"""
+		在svm, nn上效果最好的特征组合
+		:param img_paths:
+		:param image, 4, 512, 512, 已经过log和归一化处理
+		:return:
+		"""
+		HH, HV, VH, VV = self.cat_4(img_paths, x, th=2)
+
+		channel_0 = HH
+		channel_0 = channel_0[:, :, np.newaxis]
+		channel_1 = HV
+		channel_1 = channel_1[:, :, np.newaxis]
+		channel_2 = VH
+		channel_2 = channel_2[:, :, np.newaxis]
+		channel_3 = VV
+		channel_3 = channel_3[:, :, np.newaxis]
+
+		tmp = np.sqrt(HH * HH + VV * VV)
+		if tmp.min() == 0:
+			self.have_zero_aft_log.append(x)
+
+		channel_4 = VH / HH
+		channel_4 = channel_4[:, :, np.newaxis]
+		channel_5 = HV / tmp
+		channel_5 = channel_5[:, :, np.newaxis]
+		channel_6 = VH / tmp
+		channel_6 = channel_6[:, :, np.newaxis]
+		channel_7 = np.sqrt(HH * HH + VV * VV + VH * VH + HV * HV)
+		channel_7 = channel_7[:, :, np.newaxis]
+
+		tmp1 = np.abs(HV + VH)
+		tmp2 = HH + VV
+
+		channel_8 = np.sqrt(tmp1 * tmp2)
+		channel_8 = channel_8[:, :, np.newaxis]
+		channel_9 = np.sqrt(HV * VH)
+		channel_9 = channel_9[:, :, np.newaxis]
+		# channel_10 = np.sqrt(HH * HH + VV * VV + VH * VH + HV * HV)
+		# channel_10 = channel_10[:, :, np.newaxis]
+
+		ret = np.concatenate((channel_0, channel_1, channel_2, channel_3, channel_4,
+							  channel_5, channel_6, channel_7, channel_8, channel_9), axis=2)
+		return ret
+
 	def transform_all_to_psc_format(self, mode=None, th=None, lite=None):
 		"""
 		将原始tiff数据转为 VOC文件目录格式
@@ -305,6 +380,7 @@ class ProcessTiff:
 		labels = self.get_label()
 		labels[labels == 7] = 0
 
+		count = 0
 		for split_f in [train_split_f, val_split_f]:
 			with open(os.path.join(split_f), "r") as f:
 				file_names = [x.strip() for x in f.readlines()]
@@ -313,10 +389,16 @@ class ProcessTiff:
 				img_paths = self.get_img_paths(int(x))
 				if mode == "log_normal_c3_lite":
 					im = self.combination_3(img_paths, int(x))
-				if mode == "log_normal_new_c1":
+				if mode == "log_normal_new_c1" or mode == "log_normal_new_noise_c1":
 					im = self.combination_1(img_paths, int(x))
-				if mode == "log_normal_new_c2":
+				if mode == "log_normal_new_c2" or mode == "log_normal_new_noise_c2":
 					im = self.combination_2(img_paths, int(x))  # 512,512,3
+				if mode == "log_normal_new_noise_4channel":
+					im = self.keep_4_channel(img_paths, int(x))  # 512,512,4
+				if mode == "log_normal_new_noise_4channel_c4":
+					im = self.combination_4(img_paths, int(x))  # 512,512,4
+				if mode == "log_normal_new_noise_4channel_keep4_4c4_2c2_10":
+					im = self.keep4_4c4_2c2_10(img_paths, int(x))
 				image = os.path.join(self.image_dir, x + ".pkl")
 				mask = os.path.join(self.mask_dir, x + ".pkl")
 				with open(image, "wb") as img_f:
@@ -324,6 +406,8 @@ class ProcessTiff:
 				with open(mask, "wb") as mask_f:
 					pickle.dump(label, mask_f)
 				print(x)
+				count += 1
+				print(count)
 
 		print(self.all_zero)
 		print("max_log_denoise_pix is (%.30f)" % self.max_log_denoise_pix)
@@ -335,8 +419,12 @@ class ProcessTiff:
 
 if __name__ == "__main__":
 	demo = ProcessTiff()
-	# demo.transform_all_to_psc_format(mode="log_normal", th=2)
-	demo.transform_all_to_psc_format(mode="log_normal_new_c1", th=2)
-	demo.transform_all_to_psc_format(mode="log_normal_new_c2", th=2)
-# demo.transform_all_to_psc_format(mode="log_normal_c3", th=2)
+	# demo.transform_all_to_psc_format(mode="log_normal_new_c1", th=2)
+	# demo.transform_all_to_psc_format(mode="log_normal_new_c2", th=2)
+	# demo.transform_all_to_psc_format(mode="log_normal_new_noise_c1", th=2)
+	# demo.transform_all_to_psc_format(mode="log_normal_new_noise_c2", th=2)
+	# demo.transform_all_to_psc_format(mode="log_normal_new_noise_4channel", th=2)
+	# demo.transform_all_to_psc_format(mode="log_normal_new_noise_4channel_c4", th=2)
+	demo.transform_all_to_psc_format(mode="log_normal_new_noise_4channel_keep4_4c4_2c2_10", th=2)
+
 # demo.transform_all_to_psc_format(mode="log_normal_c3_lite", th=2, lite=True)
