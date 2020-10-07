@@ -77,19 +77,19 @@ class SegmentationLosses(nn.CrossEntropyLoss):
         if self.OHEM:
             if not self.se_loss and not self.aux:
                 ohemloss = self.OHEMlosses(*inputs)
-                return super(SegmentationLosses, self).forward(*inputs) + self.ohem_weight * ohemloss
+                return super(SegmentationLosses, self).forward(*inputs).mean() + self.ohem_weight * ohemloss
             elif not self.se_loss: # psp deeplab
                 pred1, pred2, target = tuple(inputs)
                 ohemloss1 = self.OHEMlosses(pred1, target)
                 ohemloss2 = self.OHEMlosses(pred2, target)
-                loss1 = super(SegmentationLosses, self).forward(pred1, target) + self.ohem_weight * ohemloss1
-                loss2 = super(SegmentationLosses, self).forward(pred2, target) + self.ohem_weight * ohemloss2
+                loss1 = super(SegmentationLosses, self).forward(pred1, target).mean() + self.ohem_weight * ohemloss1
+                loss2 = super(SegmentationLosses, self).forward(pred2, target).mean() + self.ohem_weight * ohemloss2
                 return loss1 + self.aux_weight * loss2
             elif not self.aux:
                 pred, se_pred, target = tuple(inputs)
                 se_target = self._get_batch_label_vector(target, nclass=self.nclass).type_as(pred)
                 ohemloss1 = self.OHEMlosses(pred, target)
-                loss1 = super(SegmentationLosses, self).forward(pred, target) + self.ohem_weight * ohemloss1
+                loss1 = super(SegmentationLosses, self).forward(pred, target).mean() + self.ohem_weight * ohemloss1
                 loss2 = self.bceloss(torch.sigmoid(se_pred), se_target)
                 return loss1 + self.se_weight * loss2
             else: # encnet
@@ -97,8 +97,8 @@ class SegmentationLosses(nn.CrossEntropyLoss):
                 se_target = self._get_batch_label_vector(target, nclass=self.nclass).type_as(pred1)
                 ohemloss1 = self.OHEMlosses(pred1, target)
                 ohemloss2 = self.OHEMlosses(pred2, target)
-                loss1 = super(SegmentationLosses, self).forward(pred1, target) + self.ohem_weight * ohemloss1
-                loss2 = super(SegmentationLosses, self).forward(pred2, target) + self.ohem_weight * ohemloss2
+                loss1 = super(SegmentationLosses, self).forward(pred1, target).mean() + self.ohem_weight * ohemloss1
+                loss2 = super(SegmentationLosses, self).forward(pred2, target).mean() + self.ohem_weight * ohemloss2
                 loss3 = self.bceloss(torch.sigmoid(se_pred), se_target)
                 return loss1 + self.aux_weight * loss2 + self.se_weight * loss3
         if not self.OHEM:
