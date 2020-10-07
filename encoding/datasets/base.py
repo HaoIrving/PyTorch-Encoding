@@ -120,6 +120,8 @@ class BaseDataset(data.Dataset):
         # img = img.crop((x1, y1, x1+outsize, y1+outsize))
         mask = mask.crop((x1, y1, x1+outsize, y1+outsize))
         img = img[x1: x1+outsize, y1: y1+outsize]
+
+
         # mask = mask[x1: x1+outsize, y1: y1+outsize]
         # final transform
         return img, self._mask_transform(mask)
@@ -167,6 +169,13 @@ class BaseDataset(data.Dataset):
         img = img[x1: x1+crop_size, y1: y1+crop_size]
         # mask = mask[x1: x1+crop_size, y1: y1+crop_size]
         # final transform
+
+        if random.random() < 0.5:
+            k = np.random.randint(1, 4)
+            img=np.rot90(img, k=k, axes=(0, 1))
+            mask=np.rot90(np.array(mask), k=k, axes=(0, 1))
+            return img, torch.from_numpy(mask).long()
+            
         return img, self._mask_transform(mask)
 
     def _mask_transform(self, mask):
