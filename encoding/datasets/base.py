@@ -170,7 +170,7 @@ class BaseDataset(data.Dataset):
         # mask = mask[x1: x1+crop_size, y1: y1+crop_size]
         # final transform
 
-        if random.random() < 0.2:
+        if random.random() < 0.4:
             k = np.random.randint(1, 4)
             img = np.rot90(img, k=k, axes=(0, 1))
             img = np.ascontiguousarray(img, dtype=np.float32)

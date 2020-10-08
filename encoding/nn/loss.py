@@ -51,6 +51,118 @@ class NLLMultiLabelSmooth(nn.Module):
         else:
             return torch.nn.functional.cross_entropy(x, target)
 
+
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=0, alpha=None, size_average=True):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        if isinstance(alpha, (float, int)): self.alpha = torch.Tensor([alpha, 1 - alpha])
+        if isinstance(alpha, list): self.alpha = torch.Tensor(alpha)
+        self.size_average = size_average
+
+    def forward(self, input, target):
+        if input.dim() > 2:
+            input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
+            input = input.transpose(1, 2)  # N,C,H*W => N,H*W,C
+            input = input.contiguous().view(-1, input.size(2))  # N,H*W,C => N*H*W,C
+        target = target.view(-1, 1)
+
+        logpt = F.log_softmax(input)
+        logpt = logpt.gather(1, target)
+        logpt = logpt.view(-1)
+        pt = Variable(logpt.data.exp())
+
+        if self.alpha is not None:
+            if self.alpha.type() != input.data.type():
+                self.alpha = self.alpha.type_as(input.data)
+            at = self.alpha.gather(0, target.data.view(-1))
+            logpt = logpt * Variable(at)
+
+        loss = -1 * (1 - pt) ** self.gamma * logpt
+        if self.size_average:
+            return loss.mean()
+        else:
+            return loss.sum()
+
+
+class SoftIoULoss(nn.Module):
+    def __init__(self, n_classes):
+        super(SoftIoULoss, self).__init__()
+        self.n_classes = n_classes
+
+    @staticmethod
+    def to_one_hot(tensor, n_classes):
+        n, h, w = tensor.size()
+        one_hot = torch.zeros(n, n_classes, h, w).scatter_(1, tensor.view(n, 1, h, w), 1)
+        return one_hot
+
+    def forward(self, input, target):
+        # logit => N x Classes x H x W
+        # target => N x H x W
+
+        N = len(input)
+
+        pred = F.softmax(input, dim=1)
+        target_onehot = self.to_one_hot(target, self.n_classes)
+
+        # Numerator Product
+        inter = pred * target_onehot
+        # Sum over all pixels N x C x H x W => N x C
+        inter = inter.view(N, self.n_classes, -1).sum(2)
+
+        # Denominator
+        union = pred + target_onehot - (pred * target_onehot)
+        # Sum over all pixels N x C x H x W => N x C
+        union = union.view(N, self.n_classes, -1).sum(2)
+
+        loss = inter / (union + 1e-16)
+
+        # Return average loss over classes and batch
+        return -loss.mean()
+
+
+class FwIoULoss(nn.Module):
+    def __init__(self, n_classes, ratio):
+        super(FwIoULoss, self).__init__()
+        self.n_classes = n_classes
+        self.weight = 1
+
+    @staticmethod
+    def to_one_hot(tensor, n_classes):
+        n, h, w = tensor.size()
+        one_hot = torch.zeros(n, n_classes, h, w).scatter_(1, tensor.view(n, 1, h, w), 1)
+        return one_hot
+
+    def forward(self, input, target):
+        # logit => N x Classes x H x W
+        # target => N x H x W
+        #freq为各类的比例
+        freq = np.array([0.04272119, 0.10241207, 0.13548531, 0.28421111, 0.21262745, 0.11806116, 0.10448171])
+        freq = torch.from_numpy(freq).float()
+        freq = freq.cuda(target.device)
+
+        N = input.shape[0]
+
+        pred = F.softmax(input, dim=1)
+        target_onehot = self.to_one_hot(target, self.n_classes)
+
+        # Numerator Product
+        inter = pred * target_onehot
+        # Sum over all pixels N x C x H x W => N x C
+        inter = inter.view(N, self.n_classes, -1).sum(2)
+
+        # Denominator
+        union = pred + target_onehot - (pred * target_onehot)
+        # Sum over all pixels N x C x H x W => N x C
+        union = union.view(N, self.n_classes, -1).sum(2)
+
+        loss = - inter / (union + 1e-16)
+        fwIoU = (loss * freq).sum()
+        # Return average loss over classes and batch
+        return fwIoU
+
+
 class SegmentationLosses(nn.CrossEntropyLoss):
     """2D Cross Entropy Loss with Auxilary Loss"""
     def __init__(self, se_loss=False, se_weight=0.2, nclass=-1, OHEM=False, ohemprob=False, ohemth=0.7,
@@ -71,7 +183,8 @@ class SegmentationLosses(nn.CrossEntropyLoss):
         self.se_weight = se_weight
         self.aux_weight = aux_weight
         self.bceloss = nn.BCELoss(weight) 
-        self.ohem_weight = 0.5
+        self.ohem_weight = 0.1
+        self.FwIoULoss = FwIoULoss(nclass)
 
 
     def forward(self, *inputs):
@@ -85,7 +198,9 @@ class SegmentationLosses(nn.CrossEntropyLoss):
                 ohemloss2 = self.OHEMlosses(pred2, target)
                 loss1 = super(SegmentationLosses, self).forward(pred1, target).mean() + self.ohem_weight * ohemloss1
                 loss2 = super(SegmentationLosses, self).forward(pred2, target).mean() + self.ohem_weight * ohemloss2
-                return loss1 + self.aux_weight * loss2
+                fwiouloss1 = self.FwIoULoss.forward(pred1, target)
+                fwiouloss2 = self.FwIoULoss.forward(pred2, target)
+                return loss1 + self.aux_weight * loss2 + 0.3 * (fwiouloss1 + fwiouloss2)
             elif not self.aux:
                 pred, se_pred, target = tuple(inputs)
                 se_target = self._get_batch_label_vector(target, nclass=self.nclass).type_as(pred)
@@ -109,7 +224,9 @@ class SegmentationLosses(nn.CrossEntropyLoss):
                 pred1, pred2, target = tuple(inputs)
                 loss1 = super(SegmentationLosses, self).forward(pred1, target)
                 loss2 = super(SegmentationLosses, self).forward(pred2, target)
-                return loss1 + self.aux_weight * loss2
+                fwiouloss1 = self.FwIoULoss.forward(pred1, target)
+                fwiouloss2 = self.FwIoULoss.forward(pred2, target)
+                return loss1 + self.aux_weight * loss2 + 0.3 * (fwiouloss1 + fwiouloss2)
             elif not self.aux:
                 pred, se_pred, target = tuple(inputs)
                 se_target = self._get_batch_label_vector(target, nclass=self.nclass).type_as(pred)
