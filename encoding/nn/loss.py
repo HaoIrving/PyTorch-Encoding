@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.autograd import Variable
 from .ohem_pixel_sampler import OHEMPixelSampler
+import numpy as np
 
 __all__ = ['LabelSmoothing', 'NLLMultiLabelSmooth', 'SegmentationLosses']
 
