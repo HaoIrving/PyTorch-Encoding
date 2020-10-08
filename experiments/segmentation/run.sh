@@ -19,7 +19,7 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model dee
 # atten     0.4652 24
 # encnet    0.4534 30 
 # upernet   0.4783 27 # no --aux
-# deeplab   
+# deeplab   0.3839 22
 
 # deeplab
 # # lr 0.0001
