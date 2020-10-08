@@ -7,7 +7,7 @@ cd experiments/segmentation
 # python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc --model upernet  --backbone resnest269 \
 # --batch-size 30 --epochs 30 --warmup-epochs 2  --ohem  --ohem-prob #--aux   # --se-loss
 python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model psp  --backbone resnest269 \
---batch-size 4 --epochs 500 --warmup-epochs 2 --aux 
+--batch-size 30 --epochs 500 --warmup-epochs 2 --aux 
 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 
