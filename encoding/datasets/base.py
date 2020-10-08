@@ -167,6 +167,15 @@ class BaseDataset(data.Dataset):
         img = img[x1: x1+crop_size, y1: y1+crop_size]
         # mask = mask[x1: x1+crop_size, y1: y1+crop_size]
         # final transform
+
+        if random.random() < 0.4:
+            k = np.random.randint(1, 4)
+            img = np.rot90(img, k=k, axes=(0, 1))
+            img = np.ascontiguousarray(img, dtype=np.float32)
+            mask = np.rot90(np.array(mask), k=k, axes=(0, 1))
+            mask = np.ascontiguousarray(mask, dtype=np.int8)
+            return img, torch.from_numpy(mask).long()
+
         return img, self._mask_transform(mask)
 
     def _mask_transform(self, mask):
