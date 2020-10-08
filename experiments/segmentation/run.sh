@@ -4,22 +4,26 @@ python setup.py install
 cd experiments/segmentation
 
 
-python train_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp  --backbone resnest269 \
---batch-size 4 --epochs 3 --warmup-epochs 2   --aux   #--ohem  --ohem-prob # --se-loss
+# python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc --model upernet  --backbone resnest269 \
+# --batch-size 30 --epochs 30 --warmup-epochs 2  --ohem  --ohem-prob #--aux   # --se-loss
+python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model psp  --backbone resnest269 \
+--batch-size 30 --epochs 500 --warmup-epochs 2 --aux 
+
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
-python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp  --backbone resnest269 \
---resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar --eval   --aux #--se-loss
-# 30                        ohem prab       loss+0.5*ohem
+# python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc --model upernet  --backbone resnest269 \
+# --resume runs/sar_voc/upernet/resnest269/default/model_best.pth.tar --eval  #--aux #--se-loss
+python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model psp  --backbone resnest269 \
+--resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar --eval  --aux
+# 30        3channal        ohem prab       keep4
 # fcn       0.4654 25
-# psp       0.5063 30       0.4796 30       0.5030
+# psp       0.5063 30       0.4796 30       0.5198 25
 #fcfpn      0.4734 30       
 # atten     0.4652 24
 # encnet    0.4534 30 
-# upernet   0.4783 27 # no --aux
-# deeplab   0.3839 22
+# 
 
 # deeplab
 # # lr 0.0001
@@ -49,7 +53,7 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp
 
 # pspnet
 # 400                   0.6122 138          0.6549 396
-# 500                   0.6596 488          0.6383 408 ohem
+# 500                   0.6596 488          0.6383 408 ohem     0.7117 481 keep10
 # pixAcc: 0.7583, mIoU: 0.5491, fwIoU: 0.6122: 100%|������������������������������������������������������������������������������������������������������| 17/17 [00:45<00:00,  2.65s/it]
 # freq0: 0.061955, freq1: 0.078376, freq2: 0.163651, freq3: 0.357225, freq4: 0.298697, freq5: 0.016080, freq6: 0.024017                                    | 8/17 [00:35<00:29,  3.31s/it]
 # IoU 0: 0.952692, IoU 1: 0.685647, IoU 2: 0.523152, IoU 3: 0.601464, IoU 4: 0.631610, IoU 5: 0.060363, IoU 6: 0.389081
@@ -63,6 +67,15 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_c1 --model psp
 # freq0: 0.061955, freq1: 0.078376, freq2: 0.163651, freq3: 0.357225, freq4: 0.298697, freq5: 0.016080, freq6: 0.024017                                    | 8/17 [00:37<00:31,  3.52s/it]
 # IoU 0: 0.944471, IoU 1: 0.736214, IoU 2: 0.639560, IoU 3: 0.608305, IoU 4: 0.669817, IoU 5: 0.302915, IoU 6: 0.685308
 # [      0.0585147 ,      0.05770151,      0.10466463,      0.21730175,      0.20007233,      0.00487087,      0.01645904]
+# pixAcc: 0.8256, mIoU: 0.6976, fwIoU: 0.7117: 100%|������������������������������������������������������������������������������������������������������| 17/17 [00:48<00:00,  2.84s/it]
+# freq0: 0.061955, freq1: 0.078376, freq2: 0.163651, freq3: 0.357225, freq4: 0.298697, freq5: 0.016080, freq6: 0.024017                                    | 8/17 [00:36<00:31,  3.55s/it]
+# IoU 0: 0.919322, IoU 1: 0.788858, IoU 2: 0.703880, IoU 3: 0.680696, IoU 4: 0.707474, IoU 5: 0.348180, IoU 6: 0.734516 
+
+# upernet
+# 500       0.695 364
+# pixAcc: 0.813, mIoU: 0.684, fwIoU: 0.695: 100%|�����������������������������������������������������������������������������������������������������������| 4/4 [00:14<00:00,  3.60s/it]
+# freq0: 0.061955, freq1: 0.078374, freq2: 0.163683, freq3: 0.357216, freq4: 0.298684, freq5: 0.016078, freq6: 0.024011                                   | 13/22 [01:47<01:02,  6.94s/it]
+# IoU 0: 0.913695, IoU 1: 0.772888, IoU 2: 0.667112, IoU 3: 0.666250, IoU 4: 0.693215, IoU 5: 0.338366, IoU 6: 0.735687 
 
 # adam
 
