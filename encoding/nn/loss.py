@@ -121,7 +121,7 @@ class FwIoULoss(nn.Module):
         # Sum over all pixels N x C x H x W => N x C
         union = union.view(N, self.n_classes, -1).sum(2)
 
-        loss = - inter / (union + 1e-16)
+        loss = 1.0 - inter / (union + 1e-16)
         fwIoU = (loss * freq).sum()
         # Return average loss over classes and batch
         return fwIoU
