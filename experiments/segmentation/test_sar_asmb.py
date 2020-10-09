@@ -137,6 +137,8 @@ def test(args):
     local = True
     if local:
         resume = [
+            "experiments/segmentation/make_docker/upernet_noise_7092_keep10.pth.tar",
+            "experiments/segmentation/make_docker/psp_noise_7117_keep10.pth.tar",
             "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
             # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
             # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 

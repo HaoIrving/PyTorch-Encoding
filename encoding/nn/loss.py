@@ -122,7 +122,7 @@ class FwIoULoss(nn.Module):
         union = union.view(N, self.n_classes, -1).sum(2)
 
         loss = 1. - inter / (union + 1e-16)
-        fwIoU = (loss * freq).sum()
+        fwIoU = (loss * freq).sum(1).mean()
         # Return average loss over classes and batch
         return fwIoU
 
@@ -183,7 +183,8 @@ class SegmentationLosses(nn.CrossEntropyLoss):
                 return loss1 + self.aux_weight * loss2 + self.se_weight * loss3
         if not self.OHEM:
             if not self.se_loss and not self.aux:
-                return super(SegmentationLosses, self).forward(*inputs)
+                fwiouloss = self.FwIoULoss.forward(*inputs)
+                return super(SegmentationLosses, self).forward(*inputs) + fwiouloss
             elif not self.se_loss:
                 pred1, pred2, target = tuple(inputs)
                 loss1 = super(SegmentationLosses, self).forward(pred1, target)

@@ -6,8 +6,8 @@ cd experiments/segmentation
 
 # python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc --model upernet  --backbone resnest269 \
 # --batch-size 30 --epochs 30 --warmup-epochs 2  --ohem  --ohem-prob #--aux   # --se-loss
-python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model psp  --backbone resnest269 \
---batch-size 30 --epochs 500 --warmup-epochs 2 --aux 
+python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model fcfpn  --backbone resnest269 \
+--batch-size 4 --epochs 500 --warmup-epochs 2 #--aux 
 
 # python train_sar.py --dataset sar_voc --child log_normal_new_c1 --model deeplab --aux --backbone resnest269 \
 # --batch-size 30 --epochs 100 --warmup-epochs 2 
@@ -15,8 +15,8 @@ python train_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep
 # --batch-size 30 --epochs 400 --warmup-epochs 2 --use-pretrain --frozen-stages -1
 # python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc --model upernet  --backbone resnest269 \
 # --resume runs/sar_voc/upernet/resnest269/default/model_best.pth.tar --eval  #--aux #--se-loss
-python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model psp  --backbone resnest269 \
---resume runs/sar_voc/psp/resnest269/default/model_best.pth.tar --eval  --aux
+python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700 --model fcfpn  --backbone resnest269 \
+--resume runs/sar_voc/fcfpn/resnest269/default/model_best.pth.tar --eval  --aux
 # 30        3channal        ohem prab       keep4
 # fcn       0.4654 25
 # psp       0.5063 30       0.4796 30       0.5198 25
@@ -72,10 +72,12 @@ python test_sar.py --dataset sar_voc --child log_normal_new_noise_4channel_keep4
 # IoU 0: 0.919322, IoU 1: 0.788858, IoU 2: 0.703880, IoU 3: 0.680696, IoU 4: 0.707474, IoU 5: 0.348180, IoU 6: 0.734516 
 
 # upernet
-# 500       0.695 364
-# pixAcc: 0.813, mIoU: 0.684, fwIoU: 0.695: 100%|�����������������������������������������������������������������������������������������������������������| 4/4 [00:14<00:00,  3.60s/it]
-# freq0: 0.061955, freq1: 0.078374, freq2: 0.163683, freq3: 0.357216, freq4: 0.298684, freq5: 0.016078, freq6: 0.024011                                   | 13/22 [01:47<01:02,  6.94s/it]
-# IoU 0: 0.913695, IoU 1: 0.772888, IoU 2: 0.667112, IoU 3: 0.666250, IoU 4: 0.693215, IoU 5: 0.338366, IoU 6: 0.735687 
+# 500       0.7092 482
+# pixAcc: 0.8233, mIoU: 0.6964, fwIoU: 0.7092: 100%|������������������������������������������������������������������������������������������������������| 17/17 [00:46<00:00,  2.73s/it]
+# freq0: 0.061955, freq1: 0.078376, freq2: 0.163651, freq3: 0.357225, freq4: 0.298697, freq5: 0.016080, freq6: 0.024017                                    | 8/17 [00:35<00:29,  3.30s/it]
+# IoU 0: 0.930338, IoU 1: 0.785871, IoU 2: 0.688972, IoU 3: 0.681563, IoU 4: 0.704492, IoU 5: 0.340464, IoU 6: 0.743329
+
+
 
 # adam
 
