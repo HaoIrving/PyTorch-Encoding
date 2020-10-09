@@ -96,12 +96,14 @@ class Options():
 
 def test(args):
     args.dataset = "sar_voc"
-    args.child = "log_normal_new_noise_c1"
+    args.child = "log_normal_new_noise_4channel_keep4_4c4_2c2_10_blc700"
     args.aux = True
     args.backbone = "resnest269"
-    # args.eval = True
 
     args.workers = 0
+
+    args.eval = True
+    keep10_org3 = False
 
     # args.model = "deeplab"
     # args.resume = "experiments/segmentation/make_docker/model_best_noise_6272.pth.tar"
@@ -118,12 +120,14 @@ def test(args):
     # dataset
     if args.eval:
         testset = get_dataset(args.dataset, split='val', mode='testval', child=args.child, 
+                              keep10_org3=keep10_org3, child3="log_normal_new_noise_c1",
                               transform=input_transform)
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
     else:
         testset = get_dataset(args.dataset, split='val', mode='test', child=args.child, 
+                              keep10_org3=keep10_org3,
                               transform=input_transform)
     # dataloader
     loader_kwargs = {'num_workers': args.workers, 'pin_memory': True} \
@@ -133,41 +137,36 @@ def test(args):
                                 collate_fn=test_batchify_fn, **loader_kwargs)
 
     # MODEL ASSEMBLE
-    local = False
-    local = True
-    if local:
-        resume = [
-            "experiments/segmentation/make_docker/upernet_noise_7092_keep10.pth.tar",
-            "experiments/segmentation/make_docker/psp_noise_7117_keep10.pth.tar",
-            "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
-            # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
-            # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
-            # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
-            # "experiments/segmentation/make_docker/psp_noise_6122.pth.tar",
-            # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
-            ]
-    else:
-        """
-        023         0.6743
-        12        
-        """
-        resume = [
-            "best/psp_noise_6596.pth.tar",
-            # "best/psp_noise_6549.pth.tar",
-            # "best/deeplab_noise_6272.pth.tar", 
-            "best/encnet_noise_6190.pth.tar", 
-            # "best/psp_noise_6122.pth.tar",
-            # "best/deeplab_noise_5999.pth.tar", 
-            ]
+    """
+    001 7236
+    01 7231
+    015 7209
+    014 7220
+    """
+    resume = [
+        "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
+        "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
+        "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
+        "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
+        # "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
+        # "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
+        # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
+        # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
+        # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
+        # "experiments/segmentation/make_docker/psp_noise_6122.pth.tar",
+        # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
+        ]
 
     ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
     ioutable = {
-        "psp_noise_6596":      [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
-        "psp_noise_6549":      [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
-        "deeplab_noise_6272":  [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
-        "encnet_noise_6190":   [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
-        "psp_noise_6122":      [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
-        "deeplab_noise_5999":  [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
+        "psp_noise_7123_keep10":    [0.917917, 0.796020, 0.703411, 0.680619, 0.708302, 0.345198, 0.735613 ],
+        "upernet_noise_7096_keep10":[0.929088, 0.788786, 0.689905, 0.681493, 0.704899, 0.337708, 0.742923],
+        "psp_noise_6596":           [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
+        "psp_noise_6549":           [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
+        "deeplab_noise_6272":       [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
+        "encnet_noise_6190":        [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
+        "psp_noise_6122":           [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
+        "deeplab_noise_5999":       [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
     }
     assemble_nums = len(resume)
     scales = []
@@ -185,10 +184,17 @@ def test(args):
         args.resume = resume[i]
         modelname = args.resume.split("/")[-1]
         args.model  = modelname.split("_")[0]
+        if args.model == "upernet" or args.model == "fcfpn":
+            args.aux = False
+        if args.model == "encnet" or args.model == "psp" or args.model == "deeplab":
+            args.aux = True
+        
+        keep10 = modelname.split(".")[0].split("_")[-1] == "keep10"
+        
         # model
         pretrained = args.resume is None and args.verify is None
-        model = get_segmentation_model(args.model, dataset=args.dataset,
-                                    backbone=args.backbone, aux = args.aux,
+        model = get_segmentation_model(args.model, dataset=args.dataset, keep10=keep10,
+                                    backbone=args.backbone, aux=args.aux,
                                     se_loss=args.se_loss,
                                     norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
                                     base_size=args.base_size, crop_size=args.crop_size)
@@ -204,7 +210,7 @@ def test(args):
         elif not pretrained:
             raise RuntimeError ("=> no checkpoint found")
 
-        evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
+        evaluator = MultiEvalModule(model, testset.num_class, scales=scales, keep10=keep10).cuda()
         evaluator.eval()
         evaluators[i] = evaluator
     
@@ -212,13 +218,23 @@ def test(args):
 
     try:
         tbar = tqdm(test_data)#, ncols=10)
-        for i, (image, dst) in enumerate(tbar):
+        for i, img10_img3_dst in enumerate(tbar):
+            if not keep10_org3:
+                image, dst = img10_img3_dst
+            else:
+                image10, image3, dst = img10_img3_dst
             if args.eval:
                 with torch.no_grad():
                     # model_assemble
                     predicts = []
                     for i in range(assemble_nums):
-                        predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                        if not keep10_org3:
+                            predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                        else:
+                            if evaluators[i].keep10 == True:
+                                predict = evaluators[i].parallel_forward(image10)
+                            if evaluators[i].keep10 == False:
+                                predict = evaluators[i].parallel_forward(image3)
                         predicts.append(predict)
                     
                     weighted_asmb = True
@@ -226,7 +242,7 @@ def test(args):
                         predicts = model_assemble(predicts, weights, assemble_nums)
 
                     metric.update(dst, predicts, weighted_asmb=weighted_asmb, postproc=False)
-                    pixAcc, mIoU, fwIoU, freq, IoU = metric.get()
+                    pixAcc, mIoU, fwIoU, freq, IoU, confusion_matrix = metric.get()
                     tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
             else:
                 with torch.no_grad():
@@ -273,7 +289,7 @@ def postprocess(predict):
     ret = np.zeros_like(predict)
     for i in range(predict.shape[0]):
         img = predict[i].astype('uint8')
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(5,5))# 正方形 8*8
         # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
         opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
         # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作

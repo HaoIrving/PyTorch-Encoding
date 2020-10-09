@@ -20,43 +20,76 @@ class VOCSegmentation_sar(BaseDataset):
     NUM_CLASS = 7
 
     def __init__(self, root=os.path.expanduser('~/.encoding/data'), split='train', indir=None, denoise=False, 
+                 keep10_org3=False, child3="log_normal_new_noise_c1",
                  mode=None, child='log_normal_c3', transform=None, target_transform=None, **kwargs):
         super(VOCSegmentation_sar, self).__init__(root, split, mode, transform,
                                                   target_transform, **kwargs)
-        _base_dir = os.path.join('VOCdevkit_sar', child)
-        _voc_root = os.path.join(self.root, _base_dir)
-        _mask_dir = os.path.join(_voc_root, 'SegmentationClass')
-        _image_dir = os.path.join(_voc_root, 'JPEGImages')
-        # train/val/test splits are pre-cut
-        _splits_dir = os.path.join(_voc_root, 'ImageSets/Segmentation')
+        self.keep10_org3 = keep10_org3
+        if not keep10_org3:
+            _base_dir = os.path.join('VOCdevkit_sar', child)
+            _voc_root = os.path.join(self.root, _base_dir)
+            _mask_dir = os.path.join(_voc_root, 'SegmentationClass')
+            _image_dir = os.path.join(_voc_root, 'JPEGImages')
+            # train/val/test splits are pre-cut
+            _splits_dir = os.path.join(_voc_root, 'ImageSets/Segmentation')
+        else:
+            _base_dir10 = os.path.join('VOCdevkit_sar', child)
+            _voc_root10 = os.path.join(self.root, _base_dir10)
+            _mask_dir = os.path.join(_voc_root10, 'SegmentationClass')
+            _image_dir10 = os.path.join(_voc_root10, 'JPEGImages')
+            # train/val/test splits are pre-cut
+            _splits_dir = os.path.join(_voc_root10, 'ImageSets/Segmentation')
+
+            _base_dir3 = os.path.join('VOCdevkit_sar', child3)
+            _voc_root3 = os.path.join(self.root, _base_dir3)
+            _image_dir3 = os.path.join(_voc_root3, 'JPEGImages')
+
         if self.mode == 'train':
             _split_f = os.path.join(_splits_dir, 'trainval.txt')
         elif self.mode == 'val':  
             _split_f = os.path.join(_splits_dir, 'val.txt')
-        elif self.mode == 'testval':
+        elif self.mode == 'testval':  # set keep10_org3=True only when args.eval=True
             _split_f = os.path.join(_splits_dir, 'val.txt')
-        elif self.mode == 'test':
+        elif self.mode == 'test': # set args.eval=True when keep10_org3, not support keep10_org3
             _split_f = os.path.join(_splits_dir, 'trainval.txt')
         elif self.mode == 'docker':
             lines = [f for f in os.listdir(indir)]
             lines.sort()
         else:
             raise RuntimeError('Unknown dataset split.')
-        self.images = []
+        
+        if not keep10_org3:
+            self.images = []
+        else:
+            self.images10 = []
+            self.images3 = []
         self.masks = []
         self.denoise = denoise
+
         if self.mode != 'docker':
             with open(os.path.join(_split_f), "r") as lines:
                 for line in tqdm(lines):
-                    _image = os.path.join(_image_dir, line.rstrip('\n') + ".pkl")
-                    assert os.path.isfile(_image)
-                    self.images.append(_image)
+                    if not keep10_org3:
+                        _image = os.path.join(_image_dir, line.rstrip('\n') + ".pkl")
+                        assert os.path.isfile(_image)
+                        self.images.append(_image)
+                    else:
+                        _image10 = os.path.join(_image_dir10, line.rstrip('\n') + ".pkl")
+                        assert os.path.isfile(_image10)
+                        self.images10.append(_image10)
+                        _image3 = os.path.join(_image_dir3, line.rstrip('\n') + ".pkl")
+                        assert os.path.isfile(_image3)
+                        self.images3.append(_image3)
+
                     if self.mode != 'test':
                         _mask = os.path.join(_mask_dir, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_mask)
                         self.masks.append(_mask)
             if self.mode != 'test':
-                assert (len(self.images) == len(self.masks))
+                if not keep10_org3:
+                    assert (len(self.images) == len(self.masks))
+                else:
+                    assert (len(self.images10) == len(self.masks))
         if self.mode == 'docker':
             for line in tqdm(lines):
                 if line.split('.')[-1] != 'tiff':
@@ -67,13 +100,21 @@ class VOCSegmentation_sar(BaseDataset):
 
     def __getitem__(self, index):
         if self.mode != 'docker':
-            # img = Image.open(self.images[index]).convert('RGB')
-            img_f = open(self.images[index], 'rb') 
-            img = pickle.load(img_f) # 512,512,3
-            if self.mode == 'test': # not used
+            if not self.keep10_org3:
+                # img = Image.open(self.images[index]).convert('RGB')
+                img_f = open(self.images[index], 'rb') 
+                img = pickle.load(img_f) # 512,512,3
+            else:
+                img_f10 = open(self.images10[index], 'rb') 
+                img10 = pickle.load(img_f10) # 512,512,3
+                img_f3 = open(self.images3[index], 'rb') 
+                img3 = pickle.load(img_f3) # 512,512,3
+
+            if self.mode == 'test': 
                 if self.transform is not None:
                     img = self.transform(img)
                 return img, os.path.basename(self.images[index])
+
             # target = Image.open(self.masks[index])
             mask_f = open(self.masks[index], 'rb')
             target_np = pickle.load(mask_f)  # 512,512
@@ -88,12 +129,24 @@ class VOCSegmentation_sar(BaseDataset):
                 target = self._mask_transform(target)
             # general resize, normalize and toTensor
             if self.transform is not None:
-                img = self.transform(img)
-                if img.type() == 'torch.DoubleTensor':
-                    img = img.type(torch.FloatTensor)
+                if not self.keep10_org3:
+                    img = self.transform(img)
+                    if img.type() == 'torch.DoubleTensor':
+                        img = img.type(torch.FloatTensor)
+                else:
+                    img10 = self.transform(img10)
+                    if img10.type() == 'torch.DoubleTensor':
+                        img10 = img10.type(torch.FloatTensor)
+                    img3 = self.transform(img3)
+                    if img3.type() == 'torch.DoubleTensor':
+                        img3 = img3.type(torch.FloatTensor)
             if self.target_transform is not None:
                 target = self.target_transform(target)
-            return img, target
+            if not self.keep10_org3:
+                return img, target
+            else:
+                return img10, img3, target
+
         if self.mode == 'docker':
             img_paths = self.images[index * 4: index * 4 + 4]
             if self.split == 'c1':
@@ -170,7 +223,10 @@ class VOCSegmentation_sar(BaseDataset):
 
     def __len__(self):
         if self.mode != 'docker':
-            return len(self.images)
+            if not self.keep10_org3:
+                return len(self.images)
+            else:
+                return len(self.images10)
         if self.mode == 'docker':
             return len(self.images) // 4
 

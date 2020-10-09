@@ -52,7 +52,7 @@ class SegmentationMetric(object):
         self.reset()
         self.confusion_matrix = np.zeros((nclass, nclass))
 
-    def update(self, labels, preds, weighted_asmb=True, postproc=True):
+    def update(self, labels, preds, weighted_asmb=True, postproc=False):
         def evaluate_worker(self, label, pred, weighted_asmb=True, postproc=True):
             correct, labeled = batch_pix_accuracy(
                 pred, label, weighted_asmb=weighted_asmb, postproc=postproc)

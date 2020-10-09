@@ -43,7 +43,7 @@ class UperNet(BaseNet):
     >>> print(model)
     """
     def __init__(self, nclass, backbone, aux=True, se_loss=False, norm_layer=nn.BatchNorm2d, **kwargs):
-        super(UperNet, self).__init__(nclass, backbone, aux, se_loss, dilated=False, norm_layer=norm_layer)
+        super(UperNet, self).__init__(nclass, backbone, aux, se_loss, dilated=False, norm_layer=norm_layer, **kwargs)
         self.head = UperNetHead(nclass, norm_layer, up_kwargs=self._up_kwargs)
         assert not aux, "UperNet does not support aux loss"
 
@@ -59,6 +59,7 @@ class UperNet(BaseNet):
 class UperNetHead(FCFPNHead):
     def __init__(self, out_channels, norm_layer=None, fpn_inchannels=[256, 512, 1024, 2048],
                  fpn_dim=256, up_kwargs=None):
+        fpn_inchannels = [256, 512, 1024, 2048]
         fpn_inchannels[-1] = fpn_inchannels[-1] * 2
         super(UperNetHead, self).__init__(out_channels, norm_layer, fpn_inchannels,
                                           fpn_dim, up_kwargs)

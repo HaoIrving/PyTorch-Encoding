@@ -41,7 +41,7 @@ class FCFPN(BaseNet):
     >>> print(model)
     """
     def __init__(self, nclass, backbone, aux=True, se_loss=False, norm_layer=nn.BatchNorm2d, **kwargs):
-        super(FCFPN, self).__init__(nclass, backbone, aux, se_loss, dilated=False, norm_layer=norm_layer)
+        super(FCFPN, self).__init__(nclass, backbone, aux, se_loss, dilated=False, norm_layer=norm_layer, **kwargs)
         self.head = FCFPNHead(nclass, norm_layer, up_kwargs=self._up_kwargs)
         assert not aux, "FCFPN does not support aux loss"
 

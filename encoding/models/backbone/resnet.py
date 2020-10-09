@@ -141,7 +141,7 @@ class ResNet(nn.Module):
     """
     # pylint: disable=unused-variable
     def __init__(self, block, layers, radix=1, groups=1, bottleneck_width=64, frozen_stages=-1,
-                 num_classes=1000, dilated=False, dilation=1,
+                 num_classes=1000, dilated=False, dilation=1, keep10=True,
                  deep_stem=False, stem_width=64, avg_down=False,
                  rectified_conv=False, rectify_avg=False,
                  avd=False, avd_first=False,
@@ -167,15 +167,26 @@ class ResNet(nn.Module):
             conv_layer = nn.Conv2d
         conv_kwargs = {'average_mode': rectify_avg} if rectified_conv else {}
         if deep_stem:
-            self.conv1 = nn.Sequential(
-                conv_layer(10, stem_width, kernel_size=3, stride=2, padding=1, bias=False, **conv_kwargs),
-                norm_layer(stem_width),
-                nn.ReLU(inplace=True),
-                conv_layer(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
-                norm_layer(stem_width),
-                nn.ReLU(inplace=True),
-                conv_layer(stem_width, stem_width*2, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
-            )
+            if not keep10:
+                self.conv1 = nn.Sequential(
+                    conv_layer(3, stem_width, kernel_size=3, stride=2, padding=1, bias=False, **conv_kwargs),
+                    norm_layer(stem_width),
+                    nn.ReLU(inplace=True),
+                    conv_layer(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
+                    norm_layer(stem_width),
+                    nn.ReLU(inplace=True),
+                    conv_layer(stem_width, stem_width*2, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
+                )
+            else:
+                self.conv1 = nn.Sequential(
+                    conv_layer(10, stem_width, kernel_size=3, stride=2, padding=1, bias=False, **conv_kwargs),
+                    norm_layer(stem_width),
+                    nn.ReLU(inplace=True),
+                    conv_layer(stem_width, stem_width, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
+                    norm_layer(stem_width),
+                    nn.ReLU(inplace=True),
+                    conv_layer(stem_width, stem_width*2, kernel_size=3, stride=1, padding=1, bias=False, **conv_kwargs),
+                )
         else:
             self.conv1 = conv_layer(3, 64, kernel_size=7, stride=2, padding=3,
                                    bias=False, **conv_kwargs)

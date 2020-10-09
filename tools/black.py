@@ -5,12 +5,12 @@ from scipy import stats
 import scipy.io as sio
 
 
-def black_area(im_data1,pre_lab):
+def black_area(im_data1, pre_lab):
     # load  the  corresponding  original    data.    use    two    channel is enough
-    a1 = im_data1#HH channel
-    #a4 = im_data2#VV channel
-    b=np.where(a1==0) #find the index where a1==0 and a4==0
-    b0=b[0].shape
+    a1 = im_data1  # HH channel
+    # a4 = im_data2  # VV channel
+    b = np.where(a1==0) # find the index where a1==0 and a4==0
+    b0 = b[0].shape
     c = np.ones((512, 512))
     z = pre_lab
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     #im_data2 = cv2.imread("./blacktest/28_HV.tiff", -1)
     ## 黑色区域mask
     if 0 in pre_lab:# 判断矩阵是否有0元素# there exists black--0 class
-        pre_labnew = black_area(im_data1, pre_lab);
+        pre_labnew = black_area(im_data1, pre_lab)
 
 
 

@@ -110,7 +110,7 @@ class BaseNet(nn.Module):
 
 class MultiEvalModule(DataParallel):
     """Multi-size Segmentation Eavluator"""
-    def __init__(self, module, nclass, device_ids=None, flip=True,
+    def __init__(self, module, nclass, device_ids=None, flip=True, keep10=False,
                  scales=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75]):
         super(MultiEvalModule, self).__init__(module, device_ids)
         self.nclass = nclass
@@ -118,6 +118,7 @@ class MultiEvalModule(DataParallel):
         self.crop_size = module.crop_size
         self.scales = scales
         self.flip = flip
+        self.keep10 = keep10
         print('MultiEvalModule: base_size {}, crop_size {}'. \
             format(self.base_size, self.crop_size))
 
