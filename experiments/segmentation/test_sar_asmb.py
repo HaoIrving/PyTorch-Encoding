@@ -12,6 +12,8 @@ from PIL import Image
 from collections import defaultdict
 import cv2
 # import copy
+from scipy import stats
+
 
 import torch
 from torch.utils import data
@@ -102,7 +104,7 @@ def test(args):
 
     args.workers = 0
 
-    args.eval = True
+    # args.eval = True
     keep10_org3 = False
 
     # args.model = "deeplab"
@@ -146,9 +148,7 @@ def test(args):
     resume = [
         "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
         "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
-        "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
         "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
-        # "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
         # "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
         # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
         # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
@@ -159,7 +159,7 @@ def test(args):
 
     ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
     ioutable = {
-        "psp_noise_7123_keep10":    [0.917917, 0.796020, 0.703411, 0.680619, 0.708302, 0.345198, 0.735613 ],
+        "psp_noise_7123_keep10":    [0.917917, 0.796020, 0.703411, 0.680619, 0.708302, 0.345198, 0.735613],
         "upernet_noise_7096_keep10":[0.929088, 0.788786, 0.689905, 0.681493, 0.704899, 0.337708, 0.742923],
         "psp_noise_6596":           [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
         "psp_noise_6549":           [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
@@ -218,11 +218,11 @@ def test(args):
 
     try:
         tbar = tqdm(test_data)#, ncols=10)
-        for i, img10_img3_dst in enumerate(tbar):
+        for i, img10_img3_dst_HH_paths in enumerate(tbar):
             if not keep10_org3:
-                image, dst = img10_img3_dst
+                image, dst, HH_paths = img10_img3_dst_HH_paths
             else:
-                image10, image3, dst = img10_img3_dst
+                image10, image3, dst, HH_paths = img10_img3_dst_HH_paths
             if args.eval:
                 with torch.no_grad():
                     # model_assemble
@@ -241,7 +241,7 @@ def test(args):
                     if weighted_asmb:
                         predicts = model_assemble(predicts, weights, assemble_nums)
 
-                    metric.update(dst, predicts, weighted_asmb=weighted_asmb, postproc=False)
+                    metric.update(dst, predicts, HH_paths, weighted_asmb=weighted_asmb, postproc=False)
                     pixAcc, mIoU, fwIoU, freq, IoU, confusion_matrix = metric.get()
                     tbar.set_description('pixAcc: %.4f, mIoU: %.4f, fwIoU: %.4f' % (pixAcc, mIoU, fwIoU))
             else:
@@ -258,8 +258,12 @@ def test(args):
 
                     predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
                                 for output in outputs]
-                for predict, impath in zip(predicts, dst):
-                    predict = postprocess(predict)
+                for predict, impath, HH_path in zip(predicts, dst, HH_paths):
+                    # predict = postprocess(predict)
+                    # if 0 in predict and HH_path != "": 
+                    #     HH = cv2.imread(HH_path, -1)
+                    #     predict = black_area(HH, predict[0])
+
                     mask = utils.get_mask_pallete(predict, args.dataset)
                     mask_gray = Image.fromarray(predict.squeeze().astype('uint8')) #
                     basename = os.path.splitext(impath)[0]
@@ -279,6 +283,38 @@ def test(args):
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def black_area(im_data1, pre_lab):
+    # load  the  corresponding  original    data.    use    two    channel is enough
+    # a1 = im_data1  # HH channel
+    # a4 = im_data2  # VV channel
+    b = np.where(im_data1 == 0)  # find the index where a1==0 and a4==0
+    b0 = b[0].shape
+    c = np.ones((512, 512))
+    z = pre_lab
+
+    for i in range(0, b0[0]):
+        c[b[0][i]][b[1][i]] = 0  # 找出原图中黑色区域，做成mask c，c中0元素对应的为黑色，其它为1
+        z[b[0][i]][b[1][i]] = 0  # z为最终要输出的图，先将确定的黑色区域变成0
+
+    d = np.where(pre_lab == 0)  # 找出预测图为0的位置
+    d0 = d[0].shape
+    
+    for i in range(0, d0[0]):
+        if (c[d[0][i]][d[1][i]]) == 1:
+            q = []
+            hw = 40
+            while q == []:
+                f0 = np.lib.pad(pre_lab, ((hw, hw), (hw, hw)), 'constant')  # 将图像做对称扩展
+                p = f0[d[0][i]:d[0][i] + 2 * hw - 1, d[1][i]:d[1][i] + 2 * hw - 1]  # 取出该点对应的patch
+                e = np.nonzero(p)  # 将其label中 非零元素的众数作为该点的label
+                e0 = e[0].shape
+                for j in range(0, e0[0]):
+                    q.append(p[e[0][j]][e[1][j]])
+                if q == []:
+                    hw += 40
+            z[d[0][i]][d[1][i]] = stats.mode(q)[0][0]
+    return z
 
 def postprocess(predict):
     """both

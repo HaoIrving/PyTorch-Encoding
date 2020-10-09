@@ -51,7 +51,7 @@ class VOCSegmentation_sar(BaseDataset):
         elif self.mode == 'testval':  # set keep10_org3=True only when args.eval=True
             _split_f = os.path.join(_splits_dir, 'val.txt')
         elif self.mode == 'test': # set args.eval=True when keep10_org3, not support keep10_org3
-            _split_f = os.path.join(_splits_dir, 'trainval.txt')
+            _split_f = os.path.join(_splits_dir, 'val.txt')
         elif self.mode == 'docker':
             lines = [f for f in os.listdir(indir)]
             lines.sort()
@@ -65,6 +65,8 @@ class VOCSegmentation_sar(BaseDataset):
             self.images3 = []
         self.masks = []
         self.denoise = denoise
+        self.HH_paths = []
+        HH_root = "/home/sun/contest/data_preprocessed/HH"
 
         if self.mode != 'docker':
             with open(os.path.join(_split_f), "r") as lines:
@@ -73,6 +75,11 @@ class VOCSegmentation_sar(BaseDataset):
                         _image = os.path.join(_image_dir, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_image)
                         self.images.append(_image)
+                        _HH = os.path.join(HH_root, str(int(line.rstrip('\n')) + 1) + "_HH.tiff")
+                        if os.path.exists(HH_root):
+                            self.HH_paths.append(_HH)
+                        else:
+                            self.HH_paths.append("")
                     else:
                         _image10 = os.path.join(_image_dir10, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_image10)
@@ -80,7 +87,6 @@ class VOCSegmentation_sar(BaseDataset):
                         _image3 = os.path.join(_image_dir3, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_image3)
                         self.images3.append(_image3)
-
                     if self.mode != 'test':
                         _mask = os.path.join(_mask_dir, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_mask)
@@ -113,7 +119,7 @@ class VOCSegmentation_sar(BaseDataset):
             if self.mode == 'test': 
                 if self.transform is not None:
                     img = self.transform(img)
-                return img, os.path.basename(self.images[index])
+                return img, os.path.basename(self.images[index]), self.HH_paths[index]
 
             # target = Image.open(self.masks[index])
             mask_f = open(self.masks[index], 'rb')
@@ -143,26 +149,64 @@ class VOCSegmentation_sar(BaseDataset):
             if self.target_transform is not None:
                 target = self.target_transform(target)
             if not self.keep10_org3:
-                return img, target
+                return img, target, self.HH_paths[index]
             else:
-                return img10, img3, target
+                return img10, img3, target, HH_path
 
         if self.mode == 'docker':
             img_paths = self.images[index * 4: index * 4 + 4]
-            if self.split == 'c1':
-                img = self.combination_1(img_paths) # 512 512 3
+            if self.split == 'keep10':
+                img = self.keep4_4c4_2c2_10(img_paths) # 512 512 10
             if self.split == 'c2':
                 img = self.combination_2(img_paths)
             if self.transform is not None:
                 img = self.transform(img)
                 if img.type() == 'torch.DoubleTensor':
                     img = img.type(torch.FloatTensor)
-            n1 = os.path.basename(self.images[index * 4])
-            n2 = os.path.basename(self.images[index * 4 + 1])
-            n3 = os.path.basename(self.images[index * 4 + 2])
-            n4 = os.path.basename(self.images[index * 4 + 3])
+            # x_HH_tiff = os.path.basename(self.images[index * 4])
             
-            return img, n1 + ' ' + n2 + ' ' + n3 + ' ' +n4
+            return img, img_paths[0]
+
+    def keep4_4c4_2c2_10(self, img_paths):
+        """
+        在svm, nn上效果最好的特征组合
+        :param img_paths:
+        :param image, 4, 512, 512, 已经过log和归一化处理
+        :return:
+        """
+        HH, HV, VH, VV = self.cat_4(img_paths, th=2)
+
+        channel_0 = HH
+        channel_0 = channel_0[:, :, np.newaxis]
+        channel_1 = HV
+        channel_1 = channel_1[:, :, np.newaxis]
+        channel_2 = VH
+        channel_2 = channel_2[:, :, np.newaxis]
+        channel_3 = VV
+        channel_3 = channel_3[:, :, np.newaxis]
+
+        tmp = np.sqrt(HH * HH + VV * VV)
+
+        channel_4 = VH / HH
+        channel_4 = channel_4[:, :, np.newaxis]
+        channel_5 = HV / tmp
+        channel_5 = channel_5[:, :, np.newaxis]
+        channel_6 = VH / tmp
+        channel_6 = channel_6[:, :, np.newaxis]
+        channel_7 = np.sqrt(HH * HH + VV * VV + VH * VH + HV * HV)
+        channel_7 = channel_7[:, :, np.newaxis]
+
+        tmp1 = np.abs(HV + VH)
+        tmp2 = HH + VV
+
+        channel_8 = np.sqrt(tmp1 * tmp2)
+        channel_8 = channel_8[:, :, np.newaxis]
+        channel_9 = np.sqrt(HV * VH)
+        channel_9 = channel_9[:, :, np.newaxis]
+
+        ret = np.concatenate((channel_0, channel_1, channel_2, channel_3, channel_4,
+                              channel_5, channel_6, channel_7, channel_8, channel_9), axis=2)
+        return ret
 
     def combination_1(self, img_paths):
         HH, HV, VH, VV = self.cat_4(img_paths, th=2)

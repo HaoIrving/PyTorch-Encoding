@@ -13,6 +13,9 @@ import numpy as np
 import torch
 import cv2
 
+from scipy import stats
+import copy
+
 __all__ = ['accuracy', 'get_pixacc_miou',
            'SegmentationMetric', 'batch_intersection_union', 'batch_pix_accuracy',
            'pixel_accuracy', 'intersection_and_union']
@@ -52,8 +55,9 @@ class SegmentationMetric(object):
         self.reset()
         self.confusion_matrix = np.zeros((nclass, nclass))
 
-    def update(self, labels, preds, weighted_asmb=True, postproc=False):
-        def evaluate_worker(self, label, pred, weighted_asmb=True, postproc=True):
+    def update(self, labels, preds, HH_paths, weighted_asmb=True, postproc=False):
+        def evaluate_worker(self, label, pred, HH_path, weighted_asmb=True, postproc=True):
+            pred = before_metric(pred, HH_path, postproc=postproc)
             correct, labeled = batch_pix_accuracy(
                 pred, label, weighted_asmb=weighted_asmb, postproc=postproc)
             inter, union, area_lab = batch_intersection_union(
@@ -69,12 +73,12 @@ class SegmentationMetric(object):
             return
 
         if isinstance(preds, torch.Tensor):
-            evaluate_worker(self, labels, preds, weighted_asmb=weighted_asmb, postproc=postproc)
+            evaluate_worker(self, labels, preds, HH_paths, weighted_asmb=weighted_asmb, postproc=postproc)
         elif isinstance(preds, (list, tuple)):
             threads = [threading.Thread(target=evaluate_worker,
-                                        args=(self, label, pred, weighted_asmb, postproc),
+                                        args=(self, label, pred, HH_path, weighted_asmb, postproc),
                                        )
-                       for (label, pred) in zip(labels, preds)]
+                       for (label, pred, HH_path) in zip(labels, preds, HH_paths)]
             for thread in threads:
                 thread.start()
             for thread in threads:
@@ -106,7 +110,7 @@ def postprocess(predict):
     ret = np.zeros_like(predict)
     for i in range(predict.shape[0]):
         img = predict[i].astype('uint8')
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(4,4))# 正方形 8*8
         # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
         opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
         # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
@@ -121,9 +125,9 @@ def postprocess(predict):
 
 
 def fast_hist(label_true, label_pred, n_class):
-    _, label_pred = torch.max(label_pred, 1) # 1, 512, 512
+    # _, label_pred = torch.max(label_pred, 1) # 1, 512, 512
 
-    label_pred = label_pred.cpu().numpy()
+    # label_pred = label_pred.cpu().numpy()
     # if postproc:
     #     label_pred = postprocess(label_pred)
     label_pred = label_pred.astype('int64')
@@ -137,18 +141,65 @@ def fast_hist(label_true, label_pred, n_class):
     ).reshape(n_class, n_class)
     return hist
 
+def black_area(im_data1, pre_lab):
+    # load  the  corresponding  original    data.    use    two    channel is enough
+    # a1 = im_data1  # HH channel
+    # a4 = im_data2  # VV channel
+    b = np.where(im_data1 == 0)  # find the index where a1==0 and a4==0
+    b0 = b[0].shape
+    c = np.ones((512, 512))
+    z = pre_lab
+
+    for i in range(0, b0[0]):
+        c[b[0][i]][b[1][i]] = 0  # 找出原图中黑色区域，做成mask c，c中0元素对应的为黑色，其它为1
+        z[b[0][i]][b[1][i]] = 0  # z为最终要输出的图，先将确定的黑色区域变成0
+
+    d = np.where(pre_lab == 0)  # 找出预测图为0的位置
+    d0 = d[0].shape
+    
+    for i in range(0, d0[0]):
+        if (c[d[0][i]][d[1][i]]) == 1:
+            q = []
+            hw = 40
+            while q == []:
+                f0 = np.lib.pad(pre_lab, ((hw, hw), (hw, hw)), 'constant')  # 将图像做对称扩展
+                p = f0[d[0][i]:d[0][i] + 2 * hw - 1, d[1][i]:d[1][i] + 2 * hw - 1]  # 取出该点对应的patch
+                e = np.nonzero(p)  # 将其label中 非零元素的众数作为该点的label
+                e0 = e[0].shape
+                for j in range(0, e0[0]):
+                    q.append(p[e[0][j]][e[1][j]])
+                if q == []:
+                    hw += 40
+            z[d[0][i]][d[1][i]] = stats.mode(q)[0][0]
+    return z
+
+def before_metric(pred, HH_path, postproc=False):
+    _, predict = torch.max(pred, 1) # 1, 512, 512
+
+    predict = predict.cpu().numpy()
+
+    if postproc:
+        predict = postprocess(predict)
+
+    # if 0 in predict and HH_path != "":  # 判断矩阵是否有0元素# there exists black--0 class
+    #     im_data1 = cv2.imread(HH_path, -1)
+    #     predict = black_area(im_data1, predict[0])
+    #     return predict[np.newaxis, :, :]
+
+    return predict
+
 def batch_pix_accuracy(output, target, weighted_asmb=False, postproc=False):
     """Batch Pixel Accuracy
     Args:
         predict: input 4D tensor
         target: label 3D tensor
     """
-    _, predict = torch.max(output, 1) # 1, 512, 512
+    # _, predict = torch.max(output, 1) # 1, 512, 512
 
-    predict = predict.cpu().numpy()
-    if postproc:
-        predict = postprocess(predict)
-    predict = predict.astype('int64') + 1
+    # predict = predict.cpu().numpy()
+    # if postproc:
+    #     predict = postprocess(predict)
+    predict = output.astype('int64') + 1
     target = target.cpu().numpy().astype('int64') + 1
 
     pixel_labeled = np.sum(target > 0)
@@ -165,15 +216,15 @@ def batch_intersection_union(output, target, nclass, weighted_asmb=False, postpr
         target: label 3D tensor
         nclass: number of categories (int)
     """
-    _, predict = torch.max(output, 1)
+    # _, predict = torch.max(output, 1)
     mini = 1
     maxi = nclass
     nbins = nclass
 
-    predict = predict.cpu().numpy()
-    if postproc:
-        predict = postprocess(predict)
-    predict = predict.astype('int64')  + 1
+    # predict = predict.cpu().numpy()
+    # if postproc:
+    #     predict = postprocess(predict)
+    predict = output.astype('int64')  + 1
     target = target.cpu().numpy().astype('int64') + 1
 
     predict = predict * (target > 0).astype(predict.dtype)

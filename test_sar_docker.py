@@ -11,6 +11,8 @@ from tqdm import tqdm
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 import cv2
+from scipy import stats
+
 
 import torch
 from torch.utils import data
@@ -86,7 +88,8 @@ class Options():
                             help='generate masks on val set')
         parser.add_argument('--c1', action='store_true', default= False,
                             help='generate masks on val set')
-
+        parser.add_argument('--keep10', action='store_true', default= False,
+                            help='generate masks on val set')
         # the parser
         self.parser = parser
 
@@ -105,7 +108,8 @@ def test(args):
     # args.resume = "model_best_noise_6272.pth.tar"
     # args.eval = True
     args.docker = True
-    args.c1 = True
+    # args.c1 = True
+    args.keep10 = True
     # args.c2 = True
     args.workers = 0
 
@@ -128,8 +132,8 @@ def test(args):
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
-    elif args.docker and args.c1:
-        testset = get_dataset(args.dataset, split='c1', mode='docker', indir=indir, 
+    elif args.docker and args.keep10:
+        testset = get_dataset(args.dataset, split='keep10', mode='docker', indir=indir,
                               transform=input_transform)
     elif args.docker and args.c2:
         testset = get_dataset(args.dataset, split='c2', mode='docker', indir=indir, 
@@ -146,18 +150,22 @@ def test(args):
     
     # MODEL ASSEMBLE
     resume = [
-        "psp_noise_6596.pth.tar",
-        "deeplab_noise_6272.pth.tar", 
-        "encnet_noise_6190.pth.tar", 
+        "psp_noise_7123_keep10.pth.tar",
+        "psp_noise_7123_keep10.pth.tar",
+        "upernet_noise_7096_keep10.pth.tar",
+
         ]
+
     ioukeys = [path.split("/")[-1].split(".")[0] for path in resume]
     ioutable = {
-        "psp_noise_6596":      [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
-        "psp_noise_6549":      [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
-        "deeplab_noise_6272":  [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
-        "encnet_noise_6190":   [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
-        "psp_noise_6122":      [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
-        "deeplab_noise_5999":  [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
+        "psp_noise_7123_keep10":    [0.917917, 0.796020, 0.703411, 0.680619, 0.708302, 0.345198, 0.735613],
+        "upernet_noise_7096_keep10":[0.929088, 0.788786, 0.689905, 0.681493, 0.704899, 0.337708, 0.742923],
+        "psp_noise_6596":           [0.944471, 0.736214, 0.639560, 0.608305, 0.669817, 0.302915, 0.685308],
+        "psp_noise_6549":           [0.943818, 0.737374, 0.635447, 0.605156, 0.665047, 0.288825, 0.632505],
+        "deeplab_noise_6272":       [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777],
+        "encnet_noise_6190":        [0.966603, 0.679119, 0.530339, 0.601795, 0.656715, 0.097908, 0.265538],
+        "psp_noise_6122":           [0.952692, 0.685647, 0.523152, 0.601464, 0.631610, 0.060363, 0.389081],
+        "deeplab_noise_5999":       [0.947047, 0.646243, 0.508729, 0.583762, 0.641149, 0.041550, 0.274465],
     }
     assemble_nums = len(resume)
     scales = []
@@ -175,9 +183,16 @@ def test(args):
         args.resume = resume[i]
         modelname = args.resume.split("/")[-1]
         args.model  = modelname.split("_")[0]
+        if args.model == "upernet" or args.model == "fcfpn":
+            args.aux = False
+        if args.model == "encnet" or args.model == "psp" or args.model == "deeplab":
+            args.aux = True
+        
+        keep10 = modelname.split(".")[0].split("_")[-1] == "keep10"
+        
         # model
         pretrained = args.resume is None and args.verify is None
-        model = get_segmentation_model(args.model, dataset=args.dataset, root='.',
+        model = get_segmentation_model(args.model, dataset=args.dataset, root='.', keep10=keep10,
                                     backbone=args.backbone, aux = args.aux,
                                     se_loss=args.se_loss,
                                     norm_layer=torch.nn.BatchNorm2d if args.acc_bn else SyncBatchNorm,
@@ -229,13 +244,12 @@ def test(args):
             for predict, impath in zip(predicts, dst):
                 # predict = postprocess(predict)
                 mask = utils.get_mask_pallete(predict, args.dataset)
-                paths = impath.split(" ")
-                path = paths[0] # 1_HH.tiff
+                path = os.path.basename(impath) # 1_HH.tiff
                 basename = os.path.splitext(path)[0] # 1_HH
                 basename = basename.split("_")[0]
                 outname = basename + '_gt.png' # 1_gt.png
                 mask.save(os.path.join(outdir, outname))
-                get_xml(outdir, path, basename, outname)
+                get_xml(outdir, basename, outname)
 
     if args.eval:
         print('freq0: %f, freq1: %f, freq2: %f, freq3: %f, freq4: %f, freq5: %f, freq6: %f' % \
@@ -279,19 +293,19 @@ def model_assemble(predicts, weights, n_models):
             assembled[cuda_index] += pred
     return assembled
 
-def get_xml(outdir, filename, basename, outname):
+def get_xml(outdir, basename, outname):
     root=ET.Element('annotation')
     root.text='\n'
     tree=ET.ElementTree(root)
 
     #parameters to set
     #filename=os.walk('/input_path')[2]
-    filename = filename
+    filename = basename + ".tif"
     resultfile = outname
     resultfile_xml = basename + '.xml'
     resultfile_xml = os.path.join(outdir, resultfile_xml)
     organization='CASIA'
-    author='1,2,3,4,5,6'
+    author='CASIA-Robot'
 
     element_source=ET.Element('source')
     element_source.text='\n'+7*' '
