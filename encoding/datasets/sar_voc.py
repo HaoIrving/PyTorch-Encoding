@@ -71,15 +71,16 @@ class VOCSegmentation_sar(BaseDataset):
         if self.mode != 'docker':
             with open(os.path.join(_split_f), "r") as lines:
                 for line in tqdm(lines):
+                    _HH = os.path.join(HH_root, str(int(line.rstrip('\n')) + 1) + "_HH.tiff")
+                    if os.path.exists(HH_root):
+                        self.HH_paths.append(_HH)
+                    else:
+                        self.HH_paths.append("")
+
                     if not keep10_org3:
                         _image = os.path.join(_image_dir, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_image)
                         self.images.append(_image)
-                        _HH = os.path.join(HH_root, str(int(line.rstrip('\n')) + 1) + "_HH.tiff")
-                        if os.path.exists(HH_root):
-                            self.HH_paths.append(_HH)
-                        else:
-                            self.HH_paths.append("")
                     else:
                         _image10 = os.path.join(_image_dir10, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_image10)
@@ -87,6 +88,7 @@ class VOCSegmentation_sar(BaseDataset):
                         _image3 = os.path.join(_image_dir3, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_image3)
                         self.images3.append(_image3)
+                        
                     if self.mode != 'test':
                         _mask = os.path.join(_mask_dir, line.rstrip('\n') + ".pkl")
                         assert os.path.isfile(_mask)
@@ -98,8 +100,8 @@ class VOCSegmentation_sar(BaseDataset):
                     assert (len(self.images10) == len(self.masks))
         if self.mode == 'docker':
             for line in tqdm(lines):
-                # if line.split('.')[-1] != 'tif':
-                #     continue
+                if line.split('.')[-1] != 'tiff':
+                    continue
                 _image = os.path.join(indir, line)
                 assert os.path.isfile(_image)
                 self.images.append(_image)
@@ -117,9 +119,19 @@ class VOCSegmentation_sar(BaseDataset):
                 img3 = pickle.load(img_f3) # 512,512,3
 
             if self.mode == 'test': 
-                if self.transform is not None:
-                    img = self.transform(img)
-                return img, os.path.basename(self.images[index]), self.HH_paths[index]
+                if not self.keep10_org3:
+                    if self.transform is not None:
+                        img = self.transform(img)
+                    return img, os.path.basename(self.images[index]), self.HH_paths[index]
+                if self.keep10_org3:
+                    if self.transform is not None:
+                        img10 = self.transform(img10)
+                        if img10.type() == 'torch.DoubleTensor':
+                            img10 = img10.type(torch.FloatTensor)
+                        img3 = self.transform(img3)
+                        if img3.type() == 'torch.DoubleTensor':
+                            img3 = img3.type(torch.FloatTensor)
+                    return img10, img3, os.path.basename(self.images[index]), self.HH_paths[index]
 
             # target = Image.open(self.masks[index])
             mask_f = open(self.masks[index], 'rb')
@@ -165,7 +177,7 @@ class VOCSegmentation_sar(BaseDataset):
                     img = img.type(torch.FloatTensor)
             # x_HH_tiff = os.path.basename(self.images[index * 4])
             
-            return img, img_paths[0]
+            return img, self.images[index * 4]
 
     def keep4_4c4_2c2_10(self, img_paths):
         """

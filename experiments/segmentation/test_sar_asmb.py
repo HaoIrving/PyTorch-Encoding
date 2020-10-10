@@ -104,8 +104,8 @@ def test(args):
 
     args.workers = 0
 
-    # args.eval = True
-    keep10_org3 = False
+    # args.eval = Trues
+    keep10_org3 = True
 
     # args.model = "deeplab"
     # args.resume = "experiments/segmentation/make_docker/model_best_noise_6272.pth.tar"
@@ -247,17 +247,39 @@ def test(args):
             else:
                 with torch.no_grad():
                     # model_assemble
-                    predicts = []
-                    for i in range(assemble_nums):
-                        predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
-                        predicts.append(predict)
-                    
-                    weighted_asmb = True
+                    weighted_asmb = False
                     if weighted_asmb:
+                        predicts = []
+                        for i in range(assemble_nums):
+                            if not keep10_org3:
+                                outputs = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                            else:
+                                if evaluators[i].keep10 == True:
+                                    outputs = evaluators[i].parallel_forward(image10)
+                                if evaluators[i].keep10 == False:
+                                    outputs = evaluators[i].parallel_forward(image3)
+                            predicts.append(outputs)
                         outputs = model_assemble(predicts, weights, assemble_nums)
+                        predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
+                                    for output in outputs]
+                    
+                    vote = True
+                    if vote:
+                        all_predicts = []
+                        for i in range(assemble_nums):
+                            if not keep10_org3:
+                                outputs = evaluators[i].parallel_forward(image)
+                            if keep10_org3:
+                                if evaluators[i].keep10 == True:
+                                    outputs = evaluators[i].parallel_forward(image10)
+                                if evaluators[i].keep10 == False:
+                                    outputs = evaluators[i].parallel_forward(image3)
+                            # [tensor([1, 7, 512, 512], cuda0), tensor]
+                            predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy().squeeze()) 
+                                    for output in outputs]
+                            all_predicts.append(predicts)
+                        predicts = model_vote(all_predicts, assemble_nums)
 
-                    predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
-                                for output in outputs]
                 for predict, impath, HH_path in zip(predicts, dst, HH_paths):
                     # predict = postprocess(predict)
                     # if 0 in predict and HH_path != "": 
@@ -283,6 +305,24 @@ def test(args):
             (freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], freq[6]))
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
+
+def model_vote(predicts, n):
+    ngpus = len(predicts[0])
+    voted = []
+    for gpu_index in range(ngpus):
+        height, width = predicts[0][gpu_index].shape
+        vote_mask = np.zeros((height, width))
+        for h in range(height):
+            for w in range(width):
+                record = np.zeros((1,7))
+                for model_index in range(n):  # n models
+                    mask = predicts[model_index][gpu_index]
+                    pixel = mask[h,w]
+                    record[0,pixel] += 1
+                label = record.argmax()
+                vote_mask[h,w] = label
+        voted.append(vote_mask)
+    return voted
 
 def black_area(im_data1, pre_lab):
     # load  the  corresponding  original    data.    use    two    channel is enough

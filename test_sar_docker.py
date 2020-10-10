@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 import cv2
 from scipy import stats
-
+from PIL import Image
 
 import torch
 from torch.utils import data
@@ -236,8 +236,8 @@ def test(args):
                 # model_assemble
                 predicts = []
                 for i in range(assemble_nums):
-                    predict = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
-                    predicts.append(predict)
+                    outputs = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                    predicts.append(outputs)
                 
                 weighted_asmb = True
                 if weighted_asmb:
@@ -247,7 +247,10 @@ def test(args):
                             for output in outputs]
             for predict, impath in zip(predicts, dst):
                 # predict = postprocess(predict)
+
                 mask = utils.get_mask_pallete(predict, args.dataset)
+                mask = mask.convert("RGB")
+                # mask_gray = Image.fromarray(predict.squeeze().astype('uint8'))
                 path = os.path.basename(impath) # 1_HH.tiff
                 basename = os.path.splitext(path)[0] # 1_HH
                 basename = basename.split("_")[0]
@@ -304,7 +307,7 @@ def get_xml(outdir, basename, outname):
 
     #parameters to set
     #filename=os.walk('/input_path')[2]
-    filename = basename + ".tif"
+    filename = basename + ".tiff"
     resultfile = outname
     resultfile_xml = basename + '.xml'
     resultfile_xml = os.path.join(outdir, resultfile_xml)
