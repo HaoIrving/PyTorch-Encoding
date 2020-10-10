@@ -116,8 +116,9 @@ def test(args):
 
     # folder
     # indir = "experiments/segmentation/make_docker/input_path"
-    indir = "/input_path"
+    # outdir = './output_path'
     outdir = '/output_path'
+    indir = "/input_path"
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     # data transforms
@@ -153,6 +154,9 @@ def test(args):
         "psp_noise_7123_keep10.pth.tar",
         "psp_noise_7123_keep10.pth.tar",
         "upernet_noise_7096_keep10.pth.tar",
+        # "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
+        # "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
+        # "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
 
         ]
 
