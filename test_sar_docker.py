@@ -109,10 +109,11 @@ def test(args):
     # args.eval = True
     args.docker = True
     # args.c1 = True
-    args.keep10 = True
+    # args.keep10 = True
     # args.c2 = True
     args.workers = 0
-
+    
+    keep10_org3 = True
 
     # folder
     # indir = "experiments/segmentation/make_docker/input_path"
@@ -133,8 +134,8 @@ def test(args):
     elif args.test_val:
         testset = get_dataset(args.dataset, split='val', mode='test',
                               transform=input_transform)
-    elif args.docker and args.keep10:
-        testset = get_dataset(args.dataset, split='keep10', mode='docker', indir=indir,
+    elif args.docker and keep10_org3:
+        testset = get_dataset(args.dataset, split='keep10_org3', mode='docker', indir=indir,
                               transform=input_transform)
     elif args.docker and args.c2:
         testset = get_dataset(args.dataset, split='c2', mode='docker', indir=indir, 
@@ -151,12 +152,14 @@ def test(args):
     
     # MODEL ASSEMBLE
     resume = [
-        "psp_noise_7123_keep10.pth.tar",
-        "psp_noise_7123_keep10.pth.tar",
-        "upernet_noise_7096_keep10.pth.tar",
-        # "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
-        # "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
-        # "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
+        # "psp_noise_7123_keep10.pth.tar",
+        # "upernet_noise_7096_keep10.pth.tar",
+        "psp_noise_6596.pth.tar",
+        # "psp_noise_6450_keep10.pth.tar",
+        # "deeplab_noise_6272.pth.tar", 
+        # "encnet_noise_6190.pth.tar", 
+        # "psp_noise_6122.pth.tar",
+        "fcfpn_noise_6034_keep10.pth.tar",
 
         ]
 
@@ -174,14 +177,16 @@ def test(args):
     assemble_nums = len(resume)
     scales = []
     evaluators = defaultdict()
-    weights = []
-    for i in range(assemble_nums):
-        ioukey  = ioukeys[i]
-        iou     = ioutable[ioukey] # [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777]
-        weights.append(iou)
-    weights = np.array(weights)
-    weights = weights / weights.sum(0) # restrict to [0, 1]
-    weights = torch.from_numpy(weights).float()
+    weighted_asmb = False
+    if weighted_asmb:
+        weights = []
+        for i in range(assemble_nums):
+            ioukey  = ioukeys[i]
+            iou     = ioutable[ioukey] # [0.959670, 0.673592, 0.538992, 0.611297, 0.660384, 0.185302, 0.339777]
+            weights.append(iou)
+        weights = np.array(weights)
+        weights = weights / weights.sum(0) # restrict to [0, 1]
+        weights = torch.from_numpy(weights).float()
 
     for i in range(assemble_nums):
         args.resume = resume[i]
@@ -221,7 +226,11 @@ def test(args):
     metric = utils.SegmentationMetric(testset.num_class)
 
     tbar = tqdm(test_data)
-    for i, (image, dst) in enumerate(tbar):
+    for i, img10_img3_dst in enumerate(tbar):
+        if not keep10_org3:
+            image, dst = img10_img3_dst
+        else:
+            image10, image3, dst = img10_img3_dst
         if args.eval:
             with torch.no_grad():
                 predicts = evaluator.parallel_forward(image)
@@ -234,17 +243,38 @@ def test(args):
         else:
             with torch.no_grad():
                 # model_assemble
-                predicts = []
-                for i in range(assemble_nums):
-                    outputs = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
-                    predicts.append(outputs)
-                
-                weighted_asmb = True
                 if weighted_asmb:
+                    predicts = []
+                    for i in range(assemble_nums):
+                        if not keep10_org3:
+                            outputs = evaluators[i].parallel_forward(image) # [tensor([1, 7, 512, 512], cuda0), tensor]
+                        else:
+                            if evaluators[i].keep10 == True:
+                                outputs = evaluators[i].parallel_forward(image10)
+                            if evaluators[i].keep10 == False:
+                                outputs = evaluators[i].parallel_forward(image3)
+                        predicts.append(outputs)
                     outputs = model_assemble(predicts, weights, assemble_nums)
+                    predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
+                                for output in outputs]
+                
+                vote = True
+                if vote:
+                    all_predicts = []
+                    for i in range(assemble_nums):
+                        if not keep10_org3:
+                            outputs = evaluators[i].parallel_forward(image)
+                        if keep10_org3:
+                            if evaluators[i].keep10 == True:
+                                outputs = evaluators[i].parallel_forward(image10)
+                            if evaluators[i].keep10 == False:
+                                outputs = evaluators[i].parallel_forward(image3)
+                        # [tensor([1, 7, 512, 512], cuda0), tensor]
+                        predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy().squeeze()) 
+                                for output in outputs]
+                        all_predicts.append(predicts)
+                    predicts = model_vote(all_predicts, assemble_nums)
 
-                predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy())
-                            for output in outputs]
             for predict, impath in zip(predicts, dst):
                 # predict = postprocess(predict)
 
@@ -264,6 +294,56 @@ def test(args):
         print('IoU 0: %f, IoU 1: %f, IoU 2: %f, IoU 3: %f, IoU 4: %f, IoU 5: %f, IoU 6: %f' % \
             (IoU[0], IoU[1], IoU[2], IoU[3], IoU[4], IoU[5], IoU[6] ))
 
+def model_vote(predicts, n):
+    ngpus = len(predicts[0])
+    voted = []
+    for gpu_index in range(ngpus):
+        height, width = predicts[0][gpu_index].shape
+        vote_mask = np.zeros((height, width))
+        for h in range(height):
+            for w in range(width):
+                record = np.zeros((1,7))
+                for model_index in range(n):  # n models
+                    mask = predicts[model_index][gpu_index]
+                    pixel = mask[h,w]
+                    record[0,pixel] += 1
+                label = record.argmax()
+                vote_mask[h,w] = label
+        voted.append(vote_mask)
+    return voted
+
+def black_area(im_data1, pre_lab):
+    # load  the  corresponding  original    data.    use    two    channel is enough
+    # a1 = im_data1  # HH channel
+    # a4 = im_data2  # VV channel
+    b = np.where(im_data1 == 0)  # find the index where a1==0 and a4==0
+    b0 = b[0].shape
+    c = np.ones((512, 512))
+    z = pre_lab
+
+    for i in range(0, b0[0]):
+        c[b[0][i]][b[1][i]] = 0  # 找出原图中黑色区域，做成mask c，c中0元素对应的为黑色，其它为1
+        z[b[0][i]][b[1][i]] = 0  # z为最终要输出的图，先将确定的黑色区域变成0
+
+    d = np.where(pre_lab == 0)  # 找出预测图为0的位置
+    d0 = d[0].shape
+    
+    for i in range(0, d0[0]):
+        if (c[d[0][i]][d[1][i]]) == 1:
+            q = []
+            hw = 40
+            while q == []:
+                f0 = np.lib.pad(pre_lab, ((hw, hw), (hw, hw)), 'constant')  # 将图像做对称扩展
+                p = f0[d[0][i]:d[0][i] + 2 * hw - 1, d[1][i]:d[1][i] + 2 * hw - 1]  # 取出该点对应的patch
+                e = np.nonzero(p)  # 将其label中 非零元素的众数作为该点的label
+                e0 = e[0].shape
+                for j in range(0, e0[0]):
+                    q.append(p[e[0][j]][e[1][j]])
+                if q == []:
+                    hw += 40
+            z[d[0][i]][d[1][i]] = stats.mode(q)[0][0]
+    return z
+
 def postprocess(predict):
     """both
     18 0.6575
@@ -273,7 +353,7 @@ def postprocess(predict):
     ret = np.zeros_like(predict)
     for i in range(predict.shape[0]):
         img = predict[i].astype('uint8')
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(8,8))# 正方形 8*8
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(5,5))# 正方形 8*8
         # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
         opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
         # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作

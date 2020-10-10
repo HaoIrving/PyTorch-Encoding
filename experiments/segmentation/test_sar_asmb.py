@@ -147,13 +147,14 @@ def test(args):
     """
     resume = [
         "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
-        "experiments/segmentation/make_docker/psp_noise_7123_keep10.pth.tar",
         "experiments/segmentation/make_docker/upernet_noise_7096_keep10.pth.tar",
         # "experiments/segmentation/make_docker/psp_noise_6596.pth.tar",
         # "experiments/segmentation/make_docker/psp_noise_6549.pth.tar",
+        # "experiments/segmentation/make_docker/psp_noise_6450_keep10.pth.tar",
         # "experiments/segmentation/make_docker/deeplab_noise_6272.pth.tar", 
         # "experiments/segmentation/make_docker/encnet_noise_6190.pth.tar", 
         # "experiments/segmentation/make_docker/psp_noise_6122.pth.tar",
+        # "experiments/segmentation/make_docker/fcfpn_noise_6034_keep10.pth.tar",
         # "experiments/segmentation/make_docker/deeplab_noise_5999.pth.tar", 
         ]
 

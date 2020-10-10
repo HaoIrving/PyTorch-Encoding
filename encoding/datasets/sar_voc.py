@@ -131,7 +131,7 @@ class VOCSegmentation_sar(BaseDataset):
                         img3 = self.transform(img3)
                         if img3.type() == 'torch.DoubleTensor':
                             img3 = img3.type(torch.FloatTensor)
-                    return img10, img3, os.path.basename(self.images[index]), self.HH_paths[index]
+                    return img10, img3, os.path.basename(self.images10[index]), self.HH_paths[index]
 
             # target = Image.open(self.masks[index])
             mask_f = open(self.masks[index], 'rb')
@@ -167,6 +167,16 @@ class VOCSegmentation_sar(BaseDataset):
 
         if self.mode == 'docker':
             img_paths = self.images[index * 4: index * 4 + 4]
+            if self.split == 'keep10_org3':
+                img10, img3 = self.keep4_4c4_2c2_10_c1(img_paths)
+                if self.transform is not None:
+                    img10 = self.transform(img10)
+                    img3 = self.transform(img3)
+                if img10.type() == 'torch.DoubleTensor':
+                    img10 = img10.type(torch.FloatTensor)
+                if img3.type() == 'torch.DoubleTensor':
+                    img3 = img3.type(torch.FloatTensor)
+                return img10, img3, self.images[index * 4]
             if self.split == 'keep10':
                 img = self.keep4_4c4_2c2_10(img_paths) # 512 512 10
             if self.split == 'c2':
@@ -178,6 +188,49 @@ class VOCSegmentation_sar(BaseDataset):
             # x_HH_tiff = os.path.basename(self.images[index * 4])
             
             return img, self.images[index * 4]
+
+    def keep4_4c4_2c2_10_c1(self, img_paths):
+        """
+        在svm, nn上效果最好的特征组合
+        :param img_paths:
+        :param image, 4, 512, 512, 已经过log和归一化处理
+        :return:
+        """
+        HH, HV, VH, VV = self.cat_4(img_paths, th=2)
+
+        channel_0 = HH
+        channel_0 = channel_0[:, :, np.newaxis]
+        channel_1 = HV
+        channel_1 = channel_1[:, :, np.newaxis]
+        channel_2 = VH
+        channel_2 = channel_2[:, :, np.newaxis]
+        channel_3 = VV
+        channel_3 = channel_3[:, :, np.newaxis]
+
+        tmp = np.sqrt(HH * HH + VV * VV)
+
+        channel_4 = VH / HH
+        channel_4 = channel_4[:, :, np.newaxis]
+        channel_5 = HV / tmp
+        channel_5 = channel_5[:, :, np.newaxis]
+        channel_6 = VH / tmp
+        channel_6 = channel_6[:, :, np.newaxis]
+        channel_7 = np.sqrt(HH * HH + VV * VV + VH * VH + HV * HV)
+        channel_7 = channel_7[:, :, np.newaxis]
+
+        tmp1 = np.abs(HV + VH)
+        tmp2 = HH + VV
+
+        channel_8 = np.sqrt(tmp1 * tmp2)
+        channel_8 = channel_8[:, :, np.newaxis]
+        channel_9 = np.sqrt(HV * VH)
+        channel_9 = channel_9[:, :, np.newaxis]
+
+        ret10 = np.concatenate((channel_0, channel_1, channel_2, channel_3, channel_4,
+                              channel_5, channel_6, channel_7, channel_8, channel_9), axis=2)
+        ret3 = np.concatenate((channel_4, channel_5, channel_7), axis=2)
+
+        return ret10, ret3
 
     def keep4_4c4_2c2_10(self, img_paths):
         """
