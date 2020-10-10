@@ -98,8 +98,8 @@ class VOCSegmentation_sar(BaseDataset):
                     assert (len(self.images10) == len(self.masks))
         if self.mode == 'docker':
             for line in tqdm(lines):
-                if line.split('.')[-1] != 'tif':
-                    continue
+                # if line.split('.')[-1] != 'tif':
+                #     continue
                 _image = os.path.join(indir, line)
                 assert os.path.isfile(_image)
                 self.images.append(_image)
