@@ -152,14 +152,11 @@ def test(args):
     
     # MODEL ASSEMBLE
     resume = [
-        # "psp_noise_7123_keep10.pth.tar",
-        # "upernet_noise_7096_keep10.pth.tar",
+        "psp_noise_7123_keep10.pth.tar",
+        "upernet_noise_7096_keep10.pth.tar",
         "psp_noise_6596.pth.tar",
         # "psp_noise_6450_keep10.pth.tar",
         # "deeplab_noise_6272.pth.tar", 
-        # "encnet_noise_6190.pth.tar", 
-        # "psp_noise_6122.pth.tar",
-        "fcfpn_noise_6034_keep10.pth.tar",
 
         ]
 
@@ -219,7 +216,7 @@ def test(args):
         elif not pretrained:
             raise RuntimeError ("=> no checkpoint found")
         # print(model)
-        evaluator = MultiEvalModule(model, testset.num_class, scales=scales).cuda()
+        evaluator = MultiEvalModule(model, testset.num_class, scales=scales, keep10=keep10).cuda()
         evaluator.eval()
         evaluators[i] = evaluator
 
@@ -272,12 +269,18 @@ def test(args):
                         # [tensor([1, 7, 512, 512], cuda0), tensor]
                         predicts = [testset.make_pred(torch.max(output, 1)[1].cpu().numpy().squeeze()) 
                                 for output in outputs]
+                        for i in range(len(predicts)):
+                            pred = predicts[i]
+                            predicts[i] = postprocess(pred)
+
                         all_predicts.append(predicts)
                     predicts = model_vote(all_predicts, assemble_nums)
 
             for predict, impath in zip(predicts, dst):
-                # predict = postprocess(predict)
-
+                if 0 in predict and impath != "": 
+                    HH = cv2.imread(impath, -1)
+                    predict = black_area(HH, predict)
+                
                 mask = utils.get_mask_pallete(predict, args.dataset)
                 mask = mask.convert("RGB")
                 # mask_gray = Image.fromarray(predict.squeeze().astype('uint8'))
@@ -340,9 +343,80 @@ def black_area(im_data1, pre_lab):
                 for j in range(0, e0[0]):
                     q.append(p[e[0][j]][e[1][j]])
                 if q == []:
-                    hw += 40
+                    hw += 10
             z[d[0][i]][d[1][i]] = stats.mode(q)[0][0]
+    z = black_move(z)
     return z
+
+def black_move(pred):
+    num = 0
+    if pred[0, 0] == 0:
+        num += 1
+    if pred[0, 511] == 0:
+        num += 1
+    if pred[511, 0] == 0:
+        num += 1
+    if pred[511, 511] == 0:
+        num += 1
+    if num == 2:
+        ###输入的label=0的像素数##
+        # num1 = 0
+        # for m in range(512):
+        #     for n in range(512):
+        #         if pred[m, n] == 0:
+        #             num1 += 1
+        # print(num1)
+
+        #ls.append(i + 1)
+        if pred[0, 0] == 0 and pred[0, 511] == 0:#up
+            for m in range(512):
+                for n in range(512):
+                    if pred[n, m] != 0:
+                        for l in range(8):
+                            b =n+l
+                            if n+l >511:
+                                b=511
+                            pred[b, m] =0
+                        break
+        if pred[511, 0] == 0 and pred[511, 511] == 0:#down
+            for m in range(512):
+                for n in range(512):
+                    if pred[n, m] == 0:
+                        for l in range(1, 21):
+                            c = n-l
+                            if n - l <0:
+                                c = 0
+                            pred[c, m] = 0
+                        break
+        if pred[0, 0] == 0 and pred[511, 0] == 0:#left
+            for n in range(512):
+                for m in range(512):
+                    if pred[n, m] != 0:
+                        for l in range(30):
+                            d = m+l
+                            if m+l>511:
+                                d = 511
+                            pred[n, d] = 0
+                        break
+        if pred[0, 511] == 0 and pred[511, 511] == 0:#right
+            for n in range(512):
+                for m in range(512):
+                    if pred[n, m] == 0:
+                        for l in range(1, 36):
+                            a = m - l
+                            if m - l < 0:
+                                a = 0
+                            pred[n, a] = 0
+                        break
+        #####  计算平移后的图像的label=0像素数
+        # num2 = 0
+        # for h in range(512):
+        #     for v in range(512):
+        #         if pred[h, v] == 0:
+        #             num2 += 1
+        # print(num2)
+        # print(num2 - num1)
+    return pred
 
 def postprocess(predict):
     """both
@@ -351,14 +425,14 @@ def postprocess(predict):
     16 0.6576
     """
     ret = np.zeros_like(predict)
-    for i in range(predict.shape[0]):
-        img = predict[i].astype('uint8')
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(5,5))# 正方形 8*8
-        # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
-        opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
-        # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
-        closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
-        ret[i] = closing
+    # for i in range(predict.shape[0]):
+    img = predict.astype('uint8')
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(5,5))# 正方形 8*8
+    # 2. cv2.MORPH_OPEN 先进行腐蚀操作，再进行膨胀操作
+    opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+    # 3. cv2.MORPH_CLOSE 先进行膨胀，再进行腐蚀操作
+    closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+    ret = closing
     return ret
 
 def model_assemble(predicts, weights, n_models):

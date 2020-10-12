@@ -163,7 +163,7 @@ class VOCSegmentation_sar(BaseDataset):
             if not self.keep10_org3:
                 return img, target, self.HH_paths[index]
             else:
-                return img10, img3, target, HH_path
+                return img10, img3, target, self.HH_paths[index]
 
         if self.mode == 'docker':
             img_paths = self.images[index * 4: index * 4 + 4]

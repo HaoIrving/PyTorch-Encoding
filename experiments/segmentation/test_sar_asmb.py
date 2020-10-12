@@ -104,7 +104,7 @@ def test(args):
 
     args.workers = 0
 
-    # args.eval = Trues
+    # args.eval = True
     keep10_org3 = True
 
     # args.model = "deeplab"
